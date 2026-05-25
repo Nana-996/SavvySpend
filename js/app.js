@@ -115,9 +115,61 @@
     setInterval(applyScaleLock, 500);
   };
 
+  App.initKeyboardViewportHandler = function () {
+    function updateViewportHeight() {
+      const height = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+      document.documentElement.style.setProperty('--app-height', `${height}px`);
+      
+      // If an input is focused, reset window scroll to top to prevent layout shift
+      if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+        window.scrollTo(0, 0);
+      }
+    }
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', updateViewportHeight);
+      window.visualViewport.addEventListener('scroll', updateViewportHeight);
+    }
+    window.addEventListener('resize', updateViewportHeight);
+    window.addEventListener('orientationchange', updateViewportHeight);
+    
+    // Initial call to set the height
+    updateViewportHeight();
+
+    // Prevent virtual keyboard from scrolling window when typing
+    document.addEventListener('scroll', function () {
+      if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+        if (window.scrollY !== 0) {
+          window.scrollTo(0, 0);
+        }
+      }
+    });
+
+    // Smoothly scroll active input/textarea into view inside scrollable containers
+    document.addEventListener('focusin', function (e) {
+      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
+        // Prevent default browser jump scroll
+        setTimeout(function () {
+          window.scrollTo(0, 0);
+          e.target.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 80);
+      }
+    });
+
+    document.addEventListener('focusout', function (e) {
+      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
+        // When keyboard hides, scroll back to top of page context
+        setTimeout(function () {
+          window.scrollTo(0, 0);
+        }, 100);
+      }
+    });
+  };
+
   App.init = function () {
     // Initialize zoom blockers and dynamic scaling
     App.initZoomBlocker();
+    App.initKeyboardViewportHandler();
 
     // Apply persisted dark mode
     const settings = DataStore.getSettings();
