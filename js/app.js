@@ -125,10 +125,8 @@
       const height = window.visualViewport ? window.visualViewport.height : window.innerHeight;
       document.documentElement.style.setProperty('--app-height', `${height}px`);
       
-      // If an input is focused, reset window scroll to top to prevent layout shift
-      if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
-        window.scrollTo(0, 0);
-      }
+      // Force window scroll back to 0,0 to prevent any automatic viewport shifts
+      window.scrollTo(0, 0);
     }
 
     if (window.visualViewport) {
@@ -141,32 +139,21 @@
     // Initial call to set the height
     updateViewportHeight();
 
-    // Prevent virtual keyboard from scrolling window when typing
-    document.addEventListener('scroll', function () {
-      if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
-        if (window.scrollY !== 0) {
-          window.scrollTo(0, 0);
-        }
-      }
-    });
-
-    // Smoothly scroll active input/textarea into view inside scrollable containers
+    // Prevent default browser screen shifting during keyboard focus
     document.addEventListener('focusin', function (e) {
       if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
-        // Prevent default browser jump scroll
         setTimeout(function () {
           window.scrollTo(0, 0);
           e.target.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }, 80);
+        }, 50);
       }
     });
 
     document.addEventListener('focusout', function (e) {
       if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
-        // When keyboard hides, scroll back to top of page context
         setTimeout(function () {
           window.scrollTo(0, 0);
-        }, 100);
+        }, 50);
       }
     });
   };
