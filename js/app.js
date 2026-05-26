@@ -131,11 +131,24 @@
 
     if (window.visualViewport) {
       window.visualViewport.addEventListener('resize', updateViewportHeight);
-      window.visualViewport.addEventListener('scroll', updateViewportHeight);
+      window.visualViewport.addEventListener('scroll', function () {
+        // Prevent visual viewport scrolling/panning (iOS standalone keyboard shift)
+        if (window.visualViewport.pageLeft !== 0 || window.visualViewport.pageTop !== 0) {
+          window.scrollTo(0, 0);
+        }
+      });
     }
+    
     window.addEventListener('resize', updateViewportHeight);
     window.addEventListener('orientationchange', updateViewportHeight);
     
+    // Prevent document/layout viewport from scrolling (diagonal shifts)
+    window.addEventListener('scroll', function () {
+      if (window.scrollY !== 0 || window.scrollX !== 0) {
+        window.scrollTo(0, 0);
+      }
+    });
+
     // Initial call to set the height
     updateViewportHeight();
 
