@@ -48,7 +48,7 @@
             <label class="form-label" for="txn-amount">Amount</label>
             <div style="position: relative;">
               <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-weight: 600; color: var(--text-primary);">${currencySymbol}</span>
-              <input class="form-input" type="number" step="0.01" id="txn-amount" placeholder="0.00" required style="padding-left: 52px;">
+              <input class="form-input" type="number" step="0.01" id="txn-amount" placeholder="0.00" required style="padding-left: 58px;">
             </div>
           </div>
 
@@ -85,9 +85,9 @@
           <div class="form-group mt-md" id="group-rating">
             <label class="form-label">Regret Tracker — How did this make you feel?</label>
             <div class="flex gap-sm" style="width: 100%;">
-              <button type="button" class="btn btn-outline btn-sm rate-chip active" data-rating="worth_it" style="flex: 1; text-align: center; font-size: 0.8rem; height: 38px;">😊 Worth It</button>
-              <button type="button" class="btn btn-outline btn-sm rate-chip" data-rating="neutral" style="flex: 1; text-align: center; font-size: 0.8rem; height: 38px;">😐 Neutral</button>
-              <button type="button" class="btn btn-outline btn-sm rate-chip" data-rating="regret" style="flex: 1; text-align: center; font-size: 0.8rem; height: 38px;">😞 Regret</button>
+              <button type="button" class="btn btn-outline btn-sm rate-chip active" data-rating="worth_it" style="flex: 1; text-align: center; font-size: 0.75rem; height: 38px; padding-left: 0; padding-right: 0;">😊 Worth It</button>
+              <button type="button" class="btn btn-outline btn-sm rate-chip" data-rating="neutral" style="flex: 1; text-align: center; font-size: 0.75rem; height: 38px; padding-left: 0; padding-right: 0;">😐 Neutral</button>
+              <button type="button" class="btn btn-outline btn-sm rate-chip" data-rating="regret" style="flex: 1; text-align: center; font-size: 0.75rem; height: 38px; padding-left: 0; padding-right: 0;">😞 Regret</button>
             </div>
             <input type="hidden" id="txn-rating" value="worth_it">
           </div>
@@ -400,7 +400,7 @@
             <label class="form-label" for="bud-limit">Monthly Limit</label>
             <div style="position: relative;">
               <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-weight: 600; color: var(--text-primary);">${currencySymbol}</span>
-              <input class="form-input" type="number" step="10" id="bud-limit" placeholder="500" required style="padding-left: 52px;">
+              <input class="form-input" type="number" step="10" id="bud-limit" placeholder="500" required style="padding-left: 58px;">
             </div>
           </div>
 
@@ -474,7 +474,7 @@
             <label class="form-label" for="edit-bud-limit">Monthly Limit</label>
             <div style="position: relative;">
               <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-weight: 600; color: var(--text-primary);">${currencySymbol}</span>
-              <input class="form-input" type="number" step="10" id="edit-bud-limit" value="${budget.limit}" required style="padding-left: 52px;">
+              <input class="form-input" type="number" step="10" id="edit-bud-limit" value="${budget.limit}" required style="padding-left: 58px;">
             </div>
           </div>
 
@@ -534,7 +534,7 @@
             <label class="form-label" for="goal-target">Target Amount</label>
             <div style="position: relative;">
               <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-weight: 600; color: var(--text-primary);">${currencySymbol}</span>
-              <input class="form-input" type="number" step="50" id="goal-target" placeholder="0.00" required style="padding-left: 52px;">
+              <input class="form-input" type="number" step="50" id="goal-target" placeholder="0.00" required style="padding-left: 58px;">
             </div>
           </div>
 
@@ -545,23 +545,23 @@
 
           <div class="form-group mt-md">
             <label class="form-label">Goal Icon</label>
-            <div class="icon-selector-grid" style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-top: 8px;">
-              <button type="button" class="btn-icon-select active" data-icon="target" style="padding: 10px; border: 2px solid var(--primary); border-radius: var(--radius-md); background: var(--bg-hover); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--primary);">
+            <div class="icon-selector-grid" style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-top: 8px;">
+              <button type="button" class="btn-icon-select active" data-icon="target" style="width: 100%; aspect-ratio: 1; padding: 0; border: 2px solid var(--primary); border-radius: var(--radius-md); background: var(--bg-hover); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--primary);">
                 <i data-lucide="target"></i>
               </button>
-              <button type="button" class="btn-icon-select" data-icon="plane" style="padding: 10px; border: 2px solid var(--border); border-radius: var(--radius-md); background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary);">
+              <button type="button" class="btn-icon-select" data-icon="plane" style="width: 100%; aspect-ratio: 1; padding: 0; border: 2px solid var(--border); border-radius: var(--radius-md); background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary);">
                 <i data-lucide="plane"></i>
               </button>
-              <button type="button" class="btn-icon-select" data-icon="shield" style="padding: 10px; border: 2px solid var(--border); border-radius: var(--radius-md); background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary);">
+              <button type="button" class="btn-icon-select" data-icon="shield" style="width: 100%; aspect-ratio: 1; padding: 0; border: 2px solid var(--border); border-radius: var(--radius-md); background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary);">
                 <i data-lucide="shield"></i>
               </button>
-              <button type="button" class="btn-icon-select" data-icon="laptop" style="padding: 10px; border: 2px solid var(--border); border-radius: var(--radius-md); background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary);">
+              <button type="button" class="btn-icon-select" data-icon="laptop" style="width: 100%; aspect-ratio: 1; padding: 0; border: 2px solid var(--border); border-radius: var(--radius-md); background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary);">
                 <i data-lucide="laptop"></i>
               </button>
-              <button type="button" class="btn-icon-select" data-icon="car" style="padding: 10px; border: 2px solid var(--border); border-radius: var(--radius-md); background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary);">
+              <button type="button" class="btn-icon-select" data-icon="car" style="width: 100%; aspect-ratio: 1; padding: 0; border: 2px solid var(--border); border-radius: var(--radius-md); background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary);">
                 <i data-lucide="car"></i>
               </button>
-              <button type="button" class="btn-icon-select" data-icon="home" style="padding: 10px; border: 2px solid var(--border); border-radius: var(--radius-md); background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary);">
+              <button type="button" class="btn-icon-select" data-icon="home" style="width: 100%; aspect-ratio: 1; padding: 0; border: 2px solid var(--border); border-radius: var(--radius-md); background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary);">
                 <i data-lucide="home"></i>
               </button>
             </div>
@@ -653,7 +653,7 @@
             <label class="form-label" for="fund-amount">Contribution Amount</label>
             <div style="position: relative;">
               <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-weight: 600; color: var(--text-primary);">${currencySymbol}</span>
-              <input class="form-input" type="number" step="10" id="fund-amount" placeholder="0.00" required style="padding-left: 52px;">
+              <input class="form-input" type="number" step="10" id="fund-amount" placeholder="0.00" required style="padding-left: 58px;">
             </div>
           </div>
 
@@ -1114,7 +1114,7 @@
             <label class="form-label" for="job-target">Assigned Balance amount</label>
             <div style="position: relative;">
               <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-weight: 600; color: var(--text-primary);">${currencySymbol}</span>
-              <input class="form-input" type="number" step="0.01" id="job-target" value="${targetVal}" placeholder="e.g. 500" required style="height: 44px; padding-left: 52px;">
+              <input class="form-input" type="number" step="0.01" id="job-target" value="${targetVal}" placeholder="e.g. 500" required style="height: 44px; padding-left: 58px;">
             </div>
           </div>
 

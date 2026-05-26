@@ -125,18 +125,33 @@
       const height = window.visualViewport ? window.visualViewport.height : window.innerHeight;
       document.documentElement.style.setProperty('--app-height', `${height}px`);
       
+      // Update modal overlay position to align with visual viewport
+      updateModalOverlayPosition();
+      
       // Force window scroll back to 0,0 to prevent any automatic viewport shifts
       window.scrollTo(0, 0);
     }
 
+    function updateModalOverlayPosition() {
+      const overlay = document.getElementById('modal-overlay');
+      if (!overlay || overlay.classList.contains('hidden')) return;
+
+      if (window.visualViewport) {
+        const vv = window.visualViewport;
+        overlay.style.position = 'absolute';
+        overlay.style.top = `${vv.offsetTop}px`;
+        overlay.style.left = `${vv.offsetLeft}px`;
+        overlay.style.width = `${vv.width}px`;
+        overlay.style.height = `${vv.height}px`;
+      }
+    }
+
+    // Expose this so it can be called when showing the modal
+    App.updateModalOverlayPosition = updateModalOverlayPosition;
+
     if (window.visualViewport) {
       window.visualViewport.addEventListener('resize', updateViewportHeight);
-      window.visualViewport.addEventListener('scroll', function () {
-        // Prevent visual viewport scrolling/panning (iOS standalone keyboard shift)
-        if (window.visualViewport.pageLeft !== 0 || window.visualViewport.pageTop !== 0) {
-          window.scrollTo(0, 0);
-        }
-      });
+      window.visualViewport.addEventListener('scroll', updateViewportHeight);
     }
     
     window.addEventListener('resize', updateViewportHeight);
@@ -157,7 +172,17 @@
       if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
         setTimeout(function () {
           window.scrollTo(0, 0);
-          e.target.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          updateModalOverlayPosition();
+          
+          // Scroll the modal-sheet internally only if the input is actually out of view
+          const sheet = e.target.closest('.modal-sheet');
+          if (sheet) {
+            const inputRect = e.target.getBoundingClientRect();
+            const sheetRect = sheet.getBoundingClientRect();
+            if (inputRect.bottom > sheetRect.bottom || inputRect.top < sheetRect.top) {
+              e.target.scrollIntoView({ block: 'nearest' });
+            }
+          }
         }, 50);
       }
     });
@@ -166,6 +191,7 @@
       if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
         setTimeout(function () {
           window.scrollTo(0, 0);
+          updateModalOverlayPosition();
         }, 50);
       }
     });
@@ -330,6 +356,10 @@
     content.innerHTML = html;
     overlay.classList.remove('hidden');
 
+    if (App.updateModalOverlayPosition) {
+      App.updateModalOverlayPosition();
+    }
+
     requestAnimationFrame(function () {
       requestAnimationFrame(function () {
         overlay.classList.add('active');
@@ -352,6 +382,13 @@
       overlay.classList.add('hidden');
       document.body.style.overflow = '';
       document.getElementById('modal-content').innerHTML = '';
+      
+      // Clean up inline styles
+      overlay.style.position = '';
+      overlay.style.top = '';
+      overlay.style.left = '';
+      overlay.style.width = '';
+      overlay.style.height = '';
     }, 300);
   };
 
