@@ -1421,6 +1421,59 @@
         }, 600);
 
       }, 1500);
+    },
+    setWeeklyBudget: function () {
+      var weeklyBudget = DataStore.getWeeklyBudget();
+      var currentLimit = weeklyBudget.limit || '';
+      var currencySymbol = (window.CURRENCIES[DataStore.getSettings().currency] || { symbol: 'GH₵' }).symbol;
+      
+      var html = `
+        <div class="modal-header flex flex-between">
+          <h3 class="modal-title">${currentLimit ? 'Adjust Weekly Budget' : 'Set Weekly Budget'}</h3>
+          <button class="btn-icon" onclick="SavvySpend.closeModal()"><i data-lucide="x"></i></button>
+        </div>
+        <form id="weekly-budget-form" class="mt-md">
+          <div class="form-group">
+            <label class="form-label" for="wb-limit">Weekly Spending Limit</label>
+            <div style="position: relative;">
+              <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-weight: 600; color: var(--text-primary);">${currencySymbol}</span>
+              <input class="form-input" type="number" step="1" id="wb-limit" value="${currentLimit}" placeholder="500" required style="padding-left: 58px;">
+            </div>
+            <span class="text-xxs text-secondary mt-xs" style="display: block; margin-top: 4px; line-height: 1.3;">
+              This is the total money you have allocated for spending each week. The app will calculate your proposed daily allowance.
+            </span>
+          </div>
+
+          <div class="modal-footer mt-lg flex gap-md">
+            <button type="button" class="btn btn-outline w-full" onclick="SavvySpend.closeModal()">Cancel</button>
+            <button type="submit" class="btn btn-primary w-full">Save Budget</button>
+          </div>
+        </form>
+      `;
+      
+      SavvySpend.showModal(html);
+      
+      document.getElementById('weekly-budget-form').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var limit = parseFloat(document.getElementById('wb-limit').value);
+        if (isNaN(limit) || limit <= 0) {
+          alert('Please enter a valid weekly limit.');
+          return;
+        }
+        
+        DataStore.setWeeklyBudget(limit);
+        
+        var xpRes = DataStore.addXP(20);
+        SavvySpend.closeModal();
+        
+        if (xpRes.leveled) {
+          SavvySpend.showToast(`Level Up! You reached Level ${xpRes.newLevel}!`, 'success');
+        } else {
+          SavvySpend.showToast('Weekly budget saved! +20 XP', 'success');
+        }
+        
+        SavvySpend.handleRoute();
+      });
     }
   };
 

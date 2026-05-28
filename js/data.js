@@ -18,7 +18,8 @@
     modes:        'ss_money_modes',
     jobs:         'ss_money_jobs',
     notes:        'ss_future_notes',
-    categories:   'ss_custom_categories'
+    categories:   'ss_custom_categories',
+    weeklyBudget: 'ss_weekly_budget'
   };
 
   // ─── Helpers ─────────────────────────────────────────────
@@ -32,6 +33,32 @@
 
   function _write(key, value) {
     SecureStorage.set(key, value);
+  }
+
+  function addDaysLocal(dateStr, days) {
+    var parts = dateStr.split('-');
+    var year = parseInt(parts[0], 10);
+    var month = parseInt(parts[1], 10) - 1; // 0-indexed
+    var day = parseInt(parts[2], 10);
+    
+    var d = new Date(year, month, day);
+    d.setDate(d.getDate() + days);
+    
+    var yyyy = d.getFullYear();
+    var mm = String(d.getMonth() + 1).padStart(2, '0');
+    var dd = String(d.getDate()).padStart(2, '0');
+    return yyyy + '-' + mm + '-' + dd;
+  }
+
+  function getDaysDiffLocal(startDateStr, endDateStr) {
+    var startParts = startDateStr.split('-');
+    var startD = new Date(parseInt(startParts[0], 10), parseInt(startParts[1], 10) - 1, parseInt(startParts[2], 10));
+    
+    var endParts = endDateStr.split('-');
+    var endD = new Date(parseInt(endParts[0], 10), parseInt(endParts[1], 10) - 1, parseInt(endParts[2], 10));
+    
+    var diffTime = endD - startD;
+    return Math.floor(diffTime / 86400000);
   }
 
   window.DEFAULT_CATEGORIES = [
@@ -578,6 +605,58 @@
       if (txUpdated) {
         _write(KEYS.transactions, txns);
       }
+    },
+
+    // ── Weekly Budget ────────────────────────────────────────
+
+    getWeeklyBudget: function () {
+      var wb = _read(KEYS.weeklyBudget) || { limit: 0, startDate: '', history: [] };
+      
+      // Handle automatic rollover
+      if (wb.limit > 0 && wb.startDate) {
+        var todayStr = new Date().toISOString().split('T')[0];
+        var daysDiff = getDaysDiffLocal(wb.startDate, todayStr);
+        
+        var txns = this.getTransactions();
+        var updated = false;
+        
+        while (daysDiff >= 7) {
+          var endCycleDate = addDaysLocal(wb.startDate, 6);
+          var cycleSpent = txns
+            .filter(function (t) {
+              return t.amount < 0 && t.date >= wb.startDate && t.date <= endCycleDate;
+            })
+            .reduce(function (sum, t) { return sum + Math.abs(t.amount); }, 0);
+            
+          wb.history.unshift({
+            startDate: wb.startDate,
+            endDate: endCycleDate,
+            limit: wb.limit,
+            spent: cycleSpent,
+            balance: wb.limit - cycleSpent
+          });
+          
+          wb.startDate = addDaysLocal(wb.startDate, 7);
+          daysDiff = getDaysDiffLocal(wb.startDate, todayStr);
+          updated = true;
+        }
+        
+        if (updated) {
+          _write(KEYS.weeklyBudget, wb);
+        }
+      }
+      
+      return deepCopy(wb);
+    },
+
+    setWeeklyBudget: function (limit) {
+      var wb = _read(KEYS.weeklyBudget) || { limit: 0, startDate: '', history: [] };
+      wb.limit = limit;
+      if (!wb.startDate) {
+        wb.startDate = new Date().toISOString().split('T')[0];
+      }
+      _write(KEYS.weeklyBudget, wb);
+      return deepCopy(wb);
     },
 
     // ── Custom Categories ────────────────────────────────────

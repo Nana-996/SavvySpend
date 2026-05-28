@@ -223,7 +223,7 @@
       });
       document.getElementById('action-set-bud').addEventListener('click', function () {
         if (SavvySpend.components.Modals) {
-          SavvySpend.components.Modals.addBudget();
+          SavvySpend.components.Modals.setWeeklyBudget();
         }
       });
       document.getElementById('action-new-goal').addEventListener('click', function () {
