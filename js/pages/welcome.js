@@ -286,6 +286,9 @@
             SecureStorage.set('ss_transactions', []);
             SecureStorage.set('ss_budgets', []);
             SecureStorage.set('ss_goals', []);
+            SecureStorage.set('ss_weekly_budget', { limit: 0, startDate: '', history: [] });
+            SecureStorage.set('ss_money_jobs', []);
+            SecureStorage.set('ss_future_notes', []);
 
             // Generate and save recovery keys
             var recKey = document.getElementById('su-recovery-key').value;
