@@ -72,6 +72,10 @@
       const shellEl = document.getElementById('app-shell');
       if (!shellEl) return;
 
+      // Never touch body overflow when a modal is open
+      var modalOverlay = document.getElementById('modal-overlay');
+      var modalIsOpen = modalOverlay && !modalOverlay.classList.contains('hidden');
+
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       if (isMobile) {
         // Clear any scale adjustments on mobile/simulated devices
@@ -79,7 +83,9 @@
         shellEl.style.transformOrigin = '';
         shellEl.style.width = '';
         shellEl.style.height = '';
-        document.body.style.overflow = '';
+        if (!modalIsOpen) {
+          document.body.style.overflow = '';
+        }
         document.body.style.overflowX = 'hidden';
         document.documentElement.style.overflowX = 'hidden';
         return;
@@ -107,7 +113,9 @@
         shellEl.style.transformOrigin = '';
         shellEl.style.width = '';
         shellEl.style.height = '';
-        document.body.style.overflow = '';
+        if (!modalIsOpen) {
+          document.body.style.overflow = '';
+        }
       }
 
       document.body.style.overflowX = 'hidden';

@@ -664,7 +664,7 @@
                   </div>
                   <div class="settings-item-text-custom">
                     <span class="settings-item-title-custom">Face ID Lock</span>
-                    <span class="settings-item-subtitle-custom">Require Face ID to unlock vault</span>
+                    <span class="settings-item-subtitle-custom">Require Face ID to log in</span>
                   </div>
                 </div>
                 <label class="toggle-switch">
@@ -679,8 +679,8 @@
                     <i data-lucide="lock"></i>
                   </div>
                   <div class="settings-item-text-custom">
-                    <span class="settings-item-title-custom">Change Storage Passphrase</span>
-                    <span class="settings-item-subtitle-custom">Secure local encryption key</span>
+                    <span class="settings-item-title-custom">Change Password</span>
+                    <span class="settings-item-subtitle-custom">Update your login password</span>
                   </div>
                 </div>
                 <i data-lucide="chevron-right" class="chevron-icon-custom"></i>
@@ -706,8 +706,8 @@
                     <span class="settings-item-title-custom" style="display:none;"></span>
                   </div>
                   <div class="settings-item-text-custom">
-                    <span class="settings-item-title-custom">Lock Vault</span>
-                    <span class="settings-item-subtitle-custom">Lock local financial dashboard</span>
+                    <span class="settings-item-title-custom">Log Out</span>
+                    <span class="settings-item-subtitle-custom">Lock app and return to login</span>
                   </div>
                 </div>
                 <i data-lucide="chevron-right" class="chevron-icon-custom"></i>
@@ -927,11 +927,11 @@
         });
       }
 
-      // 5. Change Encryption Passphrase
+      // 5. Change Password
       var passItem = document.getElementById('item-change-pass');
       if (passItem) {
         passItem.addEventListener('click', function () {
-          var oldPass = prompt('Confirm your CURRENT storage encryption passphrase:');
+          var oldPass = prompt('Enter your current password:');
           if (!oldPass) return;
 
           // Verify old pass
@@ -939,11 +939,11 @@
           var testUser = DataStore.getUser();
           if (!testUser) {
             SecureStorage.setKey('SavvySpend_dummy_key_reset');
-            alert('Incorrect current passphrase.');
+            alert('Incorrect password.');
             return;
           }
 
-          var pass = prompt('Enter a NEW storage encryption passphrase:', '');
+          var pass = prompt('Enter your new password:', '');
           if (pass && pass.trim()) {
             var newPass = pass.trim();
 
@@ -999,7 +999,7 @@
               localStorage.setItem('ss_bio_passphrase_wrapped', wrappedBioNew);
             }
 
-            SavvySpend.showToast('Vault passphrase updated & data re-encrypted!', 'success');
+            SavvySpend.showToast('Password updated successfully!', 'success');
             SavvySpend.handleRoute();
           }
         });
@@ -1011,7 +1011,7 @@
         faceidToggle.addEventListener('change', function (e) {
           var isEnabled = e.target.checked;
           if (isEnabled) {
-            var activePass = prompt('Enter your active passphrase to authorize Face ID:');
+            var activePass = prompt('Enter your password to enable Face ID:');
             if (!activePass) {
               faceidToggle.checked = false;
               return;
@@ -1021,7 +1021,7 @@
             var testUser = DataStore.getUser();
             if (!testUser) {
               SecureStorage.setKey('SavvySpend_dummy_key_reset');
-              alert('Incorrect passphrase. Face ID registration cancelled.');
+              alert('Incorrect password. Face ID setup cancelled.');
               faceidToggle.checked = false;
               return;
             }
@@ -1108,14 +1108,14 @@
       var viewRecItem = document.getElementById('item-view-recovery');
       if (viewRecItem) {
         viewRecItem.addEventListener('click', function () {
-          var pass = prompt('Enter your active storage passphrase to view your Recovery Key:');
+          var pass = prompt('Enter your password to view your Recovery Key:');
           if (!pass) return;
 
           SecureStorage.setKey(pass);
           var testUser = DataStore.getUser();
           if (!testUser) {
             SecureStorage.setKey('SavvySpend_dummy_key_reset');
-            alert('Incorrect passphrase.');
+            alert('Incorrect password.');
             return;
           }
 
@@ -1177,14 +1177,14 @@
         });
       }
 
-      // 5b. Lock Vault click
+      // 5b. Log Out click
       var lockVaultItem = document.getElementById('item-lock-vault');
       if (lockVaultItem) {
         lockVaultItem.addEventListener('click', function () {
-          // Lock by setting dummy invalid encryption key and navigating to welcome
+          // Lock by setting dummy invalid encryption key and navigating to login
           SecureStorage.setKey('SavvySpend_dummy_key_reset');
           if (SavvySpend.components.Notifications) {
-            SavvySpend.components.Notifications.show('Vault locked.', 'info');
+            SavvySpend.components.Notifications.show('Logged out.', 'info');
           }
           setTimeout(function () {
             window.location.hash = '#/welcome';
