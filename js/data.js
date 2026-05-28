@@ -178,15 +178,20 @@
   // ═══════════════════════════════════════════════════════════
 
   function _seedIfEmpty() {
-    if (!_read(KEYS.transactions)) _write(KEYS.transactions, SEED_TRANSACTIONS);
-    if (!_read(KEYS.budgets))      _write(KEYS.budgets,      SEED_BUDGETS);
-    if (!_read(KEYS.goals))        _write(KEYS.goals,        SEED_GOALS);
-    if (SEED_USER !== null && !_read(KEYS.user)) _write(KEYS.user, SEED_USER);
-    if (!_read(KEYS.game))         _write(KEYS.game,         SEED_GAME);
-    if (!_read(KEYS.settings))     _write(KEYS.settings,     SEED_SETTINGS);
+    if (localStorage.getItem(KEYS.transactions) === null) _write(KEYS.transactions, SEED_TRANSACTIONS);
+    if (localStorage.getItem(KEYS.budgets) === null)      _write(KEYS.budgets,      SEED_BUDGETS);
+    if (localStorage.getItem(KEYS.goals) === null)        _write(KEYS.goals,        SEED_GOALS);
+    if (SEED_USER !== null && localStorage.getItem(KEYS.user) === null) _write(KEYS.user, SEED_USER);
+    if (localStorage.getItem(KEYS.game) === null)         _write(KEYS.game,         SEED_GAME);
+    if (localStorage.getItem(KEYS.settings) === null)     _write(KEYS.settings,     SEED_SETTINGS);
   }
 
-  function _migrateEmojiData() {
+  var EMOJI_MIGRATION_RAN = false;
+
+  function _migrateEmojiData(user) {
+    if (EMOJI_MIGRATION_RAN) return;
+    if (!user || typeof user !== 'object') return;
+
     var emojiMap = {
       '🍽️': 'utensils', '🍔': 'utensils',
       '🏠': 'home',
@@ -263,6 +268,8 @@
       });
       if (gameUpdated) _write(KEYS.game, game);
     }
+
+    EMOJI_MIGRATION_RAN = true;
   }
 
   // ═══════════════════════════════════════════════════════════
@@ -420,6 +427,7 @@
       var user = _read(KEYS.user);
       if (user) {
         initCustomCategories();
+        _migrateEmojiData(user);
       }
       return user ? deepCopy(user) : null;
     },
@@ -927,7 +935,5 @@
   };
 
   _seedIfEmpty();
-  _migrateEmojiData();
-  initCustomCategories();
 
 })();
