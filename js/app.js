@@ -122,32 +122,21 @@
 
   App.initKeyboardViewportHandler = function () {
     function updateViewportHeight() {
-      const height = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-      document.documentElement.style.setProperty('--app-height', `${height}px`);
-      
-      // Update modal overlay position to align with visual viewport
-      updateModalOverlayPosition();
+      var height = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+      document.documentElement.style.setProperty('--app-height', height + 'px');
       
       // Force window scroll back to 0,0 to prevent any automatic viewport shifts
-      window.scrollTo(0, 0);
-    }
-
-    function updateModalOverlayPosition() {
-      const overlay = document.getElementById('modal-overlay');
-      if (!overlay || overlay.classList.contains('hidden')) return;
-
-      if (window.visualViewport) {
-        const vv = window.visualViewport;
-        overlay.style.position = 'absolute';
-        overlay.style.top = `${vv.offsetTop}px`;
-        overlay.style.left = `${vv.offsetLeft}px`;
-        overlay.style.width = `${vv.width}px`;
-        overlay.style.height = `${vv.height}px`;
+      // BUT only if no modal is open (we don't want to fight modal scrolling)
+      var overlay = document.getElementById('modal-overlay');
+      var modalOpen = overlay && !overlay.classList.contains('hidden');
+      if (!modalOpen) {
+        window.scrollTo(0, 0);
       }
     }
 
-    // Expose this so it can be called when showing the modal
-    App.updateModalOverlayPosition = updateModalOverlayPosition;
+    // No-op: we no longer manipulate overlay position with JS.
+    // The CSS fixed position handles everything correctly.
+    App.updateModalOverlayPosition = function () {};
 
     if (window.visualViewport) {
       window.visualViewport.addEventListener('resize', updateViewportHeight);
@@ -158,6 +147,7 @@
     window.addEventListener('orientationchange', updateViewportHeight);
     
     // Prevent document/layout viewport from scrolling (diagonal shifts)
+    // BUT allow scroll when a modal is open (so the modal-sheet can scroll)
     window.addEventListener('scroll', function () {
       if (window.scrollY !== 0 || window.scrollX !== 0) {
         window.scrollTo(0, 0);
@@ -167,23 +157,29 @@
     // Initial call to set the height
     updateViewportHeight();
 
-    // Prevent default browser screen shifting during keyboard focus
+    // When an input inside the modal is focused, scroll it into view
+    // WITHIN the modal-sheet scroll container, not the window.
     document.addEventListener('focusin', function (e) {
-      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
+      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT')) {
         setTimeout(function () {
+          // Keep window locked
           window.scrollTo(0, 0);
-          updateModalOverlayPosition();
           
-          // Scroll the modal-sheet internally only if the input is actually out of view
-          const sheet = e.target.closest('.modal-sheet');
+          // Scroll the modal-sheet so the focused input is visible
+          var sheet = e.target.closest('.modal-sheet');
           if (sheet) {
-            const inputRect = e.target.getBoundingClientRect();
-            const sheetRect = sheet.getBoundingClientRect();
-            if (inputRect.bottom > sheetRect.bottom || inputRect.top < sheetRect.top) {
-              e.target.scrollIntoView({ block: 'nearest' });
+            var inputRect = e.target.getBoundingClientRect();
+            var sheetRect = sheet.getBoundingClientRect();
+            // If the input is below the visible area of the sheet
+            if (inputRect.bottom > sheetRect.bottom - 20) {
+              sheet.scrollTop += (inputRect.bottom - sheetRect.bottom + 60);
+            }
+            // If the input is above the visible area of the sheet
+            if (inputRect.top < sheetRect.top + 20) {
+              sheet.scrollTop -= (sheetRect.top - inputRect.top + 60);
             }
           }
-        }, 50);
+        }, 100);
       }
     });
 
@@ -191,11 +187,11 @@
       if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
         setTimeout(function () {
           window.scrollTo(0, 0);
-          updateModalOverlayPosition();
         }, 50);
       }
     });
   };
+
 
   App.init = function () {
     // Initialize zoom blockers and dynamic scaling
@@ -351,14 +347,14 @@
   // ── Modal ────────────────────────────────────────────────
 
   App.showModal = function (html) {
-    const overlay = document.getElementById('modal-overlay');
-    const content = document.getElementById('modal-content');
+    var overlay = document.getElementById('modal-overlay');
+    var content = document.getElementById('modal-content');
+    var sheet = overlay.querySelector('.modal-sheet');
     content.innerHTML = html;
     overlay.classList.remove('hidden');
 
-    if (App.updateModalOverlayPosition) {
-      App.updateModalOverlayPosition();
-    }
+    // Reset scroll position of the sheet to the top
+    if (sheet) sheet.scrollTop = 0;
 
     requestAnimationFrame(function () {
       requestAnimationFrame(function () {
@@ -375,20 +371,13 @@
   };
 
   App.closeModal = function () {
-    const overlay = document.getElementById('modal-overlay');
+    var overlay = document.getElementById('modal-overlay');
     overlay.classList.remove('active');
 
     setTimeout(function () {
       overlay.classList.add('hidden');
       document.body.style.overflow = '';
       document.getElementById('modal-content').innerHTML = '';
-      
-      // Clean up inline styles
-      overlay.style.position = '';
-      overlay.style.top = '';
-      overlay.style.left = '';
-      overlay.style.width = '';
-      overlay.style.height = '';
     }, 300);
   };
 

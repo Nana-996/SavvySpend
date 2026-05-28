@@ -35,7 +35,7 @@
           <h3 class="modal-title">Add Transaction</h3>
           <button class="btn-icon" onclick="SavvySpend.closeModal()"><i data-lucide="x"></i></button>
         </div>
-        <form id="txn-form" class="mt-md" style="max-height: 70vh; overflow-y: auto; padding-right: 4px;">
+        <form id="txn-form" class="mt-md">
           <div class="form-group flex-center mb-md">
             <div class="tab-group" style="width: 100%;">
               <button type="button" class="tab active w-full" id="btn-expense" style="flex: 1;">Expense</button>
