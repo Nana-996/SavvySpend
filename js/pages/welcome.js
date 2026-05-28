@@ -61,15 +61,15 @@
                 </div>
 
                 <div class="form-group" style="margin-bottom: 16px;">
-                  <label class="form-label" for="su-pass">Vault Passphrase</label>
+                  <label class="form-label" for="su-pass">Vault Passphrase (Required)</label>
                   <div style="position: relative;">
-                    <input class="form-input" type="password" id="su-pass" placeholder="Custom decryption key (optional)" style="height: 48px; padding-right: 44px;">
+                    <input class="form-input" type="password" id="su-pass" placeholder="Create a secure passphrase" required style="height: 48px; padding-right: 44px;">
                     <button type="button" id="btn-toggle-su-pass" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--text-tertiary); background: none; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; height: 32px; width: 32px;">
                       <i data-lucide="eye" style="width: 18px; height: 18px;"></i>
                     </button>
                   </div>
                   <span class="text-xxs text-secondary mt-xs" style="display: block; font-size: 0.65rem; margin-top: 4px; line-height: 1.3;">
-                    This passphrase encrypts your data. If you set a custom one, you'll need it on page reload. Leave empty for the default key.
+                    This passphrase encrypts your data locally. You MUST enter a passphrase and remember it, as it will be required to unlock your vault on every reload.
                   </span>
                 </div>
 
@@ -230,10 +230,10 @@
 
             var name = document.getElementById('su-name').value.trim();
             var email = document.getElementById('su-email').value.trim();
-            var pass = document.getElementById('su-pass').value.trim() || 'SavvySpend_2024_Key';
+            var pass = document.getElementById('su-pass').value.trim();
 
-            if (!name || !email) {
-              alert('Please enter your name and email.');
+            if (!name || !email || !pass) {
+              alert('Please enter your name, email, and a secure vault passphrase.');
               return;
             }
 
