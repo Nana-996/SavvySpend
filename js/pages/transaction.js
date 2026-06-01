@@ -54,9 +54,7 @@
               <span class="text-xs text-secondary">Transaction Info</span>
             </div>
           </div>
-        </div>
-
-        <!-- Big Amount Card -->
+        </div>        <!-- Big Amount Card -->
         <div class="card p-lg mb-lg text-center bg-card" style="border: 1px solid var(--border); box-shadow: var(--shadow-sm);">
           <div class="flex flex-center mb-sm">
             <div class="flex flex-center" style="width: 56px; height: 56px; border-radius: 50%; background: ${cat.color}15; color: ${cat.color};">
@@ -66,14 +64,20 @@
           <h1 class="text-3xl font-extrabold ${amountClass} mb-xs" style="letter-spacing: -0.5px;">${formattedAmount}</h1>
           <h3 class="text-sm font-bold text-primary-text mb-sm">${txn.merchant}</h3>
           
-          <div class="flex flex-center">
+          <div class="flex flex-center gap-xs">
             <span class="status-badge flex flex-center gap-xs px-sm py-xs" style="background: var(--primary-light); color: var(--primary-dark); font-weight: 700; border-radius: var(--radius-full); font-size: 0.7rem; text-transform: uppercase;">
               <i data-lucide="check-circle" style="width: 12px; height: 12px;"></i>
               ${txn.status}
             </span>
+            ${txn.isBusiness ? `
+              <span class="status-badge flex flex-center gap-xs px-sm py-xs" style="background: var(--orange-light); color: var(--orange); font-weight: 700; border-radius: var(--radius-full); font-size: 0.7rem; text-transform: uppercase; border: 1px solid rgba(200, 130, 66, 0.15);">
+                <i data-lucide="briefcase" style="width: 12px; height: 12px;"></i>
+                Business
+              </span>
+            ` : ''}
           </div>
         </div>
-
+ 
         <!-- Detail Table Card -->
         <div class="card p-md mb-lg bg-card" style="border: 1px solid var(--border);">
           <div class="detail-row flex flex-between py-sm" style="border-bottom: 1px solid var(--border-light);">
@@ -88,6 +92,29 @@
             <span class="text-xs text-secondary">Payment Method</span>
             <span class="text-xs font-semibold text-primary-text">${txn.paymentMethod} (****${txn.paymentLast4 || '0000'})</span>
           </div>
+          <div class="detail-row flex flex-between py-sm" style="border-bottom: 1px solid var(--border-light); align-items: center;">
+            <span class="text-xs text-secondary">💼 Business Transaction</span>
+            <label class="toggle-switch" style="transform: scale(0.85); transform-origin: right center;">
+              <input type="checkbox" id="btn-toggle-business-txn" class="toggle-input" ${txn.isBusiness ? 'checked' : ''}>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          ${(function () {
+            if (txn.invoiceId) {
+              var invoices = DataStore.getInvoices();
+              var inv = invoices.find(function (i) { return i.id === txn.invoiceId; });
+              var invNum = inv ? inv.invoiceNumber : 'INV-Ref';
+              return `
+                <div class="detail-row flex flex-between py-sm" style="border-bottom: none;">
+                  <span class="text-xs text-secondary">📄 Linked Invoice</span>
+                  <span class="text-xs font-semibold text-primary flex flex-center gap-xxs" style="cursor: pointer;" id="lnk-view-invoice" data-invoice-id="${txn.invoiceId}">
+                    ${invNum} <i data-lucide="external-link" style="width: 12px; height: 12px;"></i>
+                  </span>
+                </div>
+              `;
+            }
+            return '';
+          })()}
         </div>
 
         <!-- Notes and Editing Area -->
@@ -127,6 +154,31 @@
     afterRender: function (txnId) {
       var txn = DataStore.getTransaction(txnId);
       if (!txn) return;
+
+      // Business Toggle logic
+      var toggleBiz = document.getElementById('btn-toggle-business-txn');
+      if (toggleBiz) {
+        toggleBiz.addEventListener('change', function () {
+          var isChecked = toggleBiz.checked;
+          var tags = txn.tags || [];
+          if (isChecked) {
+            if (!tags.includes('business')) tags.push('business');
+          } else {
+            tags = tags.filter(function (t) { return t !== 'business'; });
+          }
+
+          DataStore.updateTransaction(txnId, { isBusiness: isChecked, tags: tags });
+          SavvySpend.showToast(isChecked ? 'Marked as business transaction!' : 'Removed from business transactions.', 'success');
+          SavvySpend.handleRoute();
+        });
+      }
+
+      var lnkInvoice = document.getElementById('lnk-view-invoice');
+      if (lnkInvoice) {
+        lnkInvoice.addEventListener('click', function () {
+          SavvySpend.navigate('#/business');
+        });
+      }
 
       // Back navigation
       document.getElementById('btn-back-home').addEventListener('click', function () {

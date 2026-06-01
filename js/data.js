@@ -19,7 +19,9 @@
     jobs:         'ss_money_jobs',
     notes:        'ss_future_notes',
     categories:   'ss_custom_categories',
-    weeklyBudget: 'ss_weekly_budget'
+    weeklyBudget: 'ss_weekly_budget',
+    invoices:     'ss_invoices',
+    clients:      'ss_clients'
   };
 
   // ─── Helpers ─────────────────────────────────────────────
@@ -145,12 +147,14 @@
       }
       window.CATEGORIES = {};
       list.forEach(function (cat) {
-        window.CATEGORIES[cat.id] = {
-          name: cat.name,
-          icon: cat.icon,
-          color: cat.color,
-          isCustom: cat.isCustom || false
-        };
+        if (cat.id && cat.id !== '__proto__' && cat.id !== 'constructor' && cat.id !== 'prototype') {
+          window.CATEGORIES[cat.id] = {
+            name: cat.name,
+            icon: cat.icon,
+            color: cat.color,
+            isCustom: cat.isCustom || false
+          };
+        }
       });
     } catch (e) {
       console.error('[DataStore] Failed to init custom categories', e);
@@ -161,13 +165,162 @@
   //  SEED DATA
   // ═══════════════════════════════════════════════════════════
 
-  var SEED_TRANSACTIONS = [];
+  var SEED_TRANSACTIONS = [
+    {
+      id: 'tx_inv_1',
+      amount: 1575.00,
+      merchant: 'Mensah Digital Solutions',
+      category: 'income',
+      date: '2026-05-22',
+      time: '11:00',
+      paymentMethod: 'Bank Transfer',
+      paymentLast4: '8812',
+      status: 'completed',
+      notes: 'Payment for Invoice INV-2026-001',
+      tags: ['business', 'invoice'],
+      currency: 'GHS',
+      isBusiness: true,
+      invoiceId: 'inv_1'
+    },
+    {
+      id: 'tx_biz_exp_1',
+      amount: -120.00,
+      merchant: 'Vercel Pro',
+      category: 'utilities',
+      date: '2026-05-18',
+      time: '09:15',
+      paymentMethod: 'Credit Card',
+      paymentLast4: '4452',
+      status: 'completed',
+      notes: 'Hosting and cloud functions for business app',
+      tags: ['business', 'hosting'],
+      currency: 'GHS',
+      isBusiness: true,
+      bucketId: 'job_app_building'
+    },
+    {
+      id: 'tx_biz_exp_2',
+      amount: -350.00,
+      merchant: 'Facebook Ads',
+      category: 'other',
+      date: '2026-05-25',
+      time: '16:40',
+      paymentMethod: 'Mobile Money',
+      paymentLast4: '1092',
+      status: 'completed',
+      notes: 'Marketing campaign for summer launch',
+      tags: ['business', 'marketing'],
+      currency: 'GHS',
+      isBusiness: true
+    },
+    {
+      id: 'tx_biz_exp_3',
+      amount: -45.00,
+      merchant: 'Github Copilot',
+      category: 'utilities',
+      date: '2026-05-20',
+      time: '08:00',
+      paymentMethod: 'Credit Card',
+      paymentLast4: '4452',
+      status: 'completed',
+      notes: 'Monthly AI assistant subscription',
+      tags: ['business', 'tools'],
+      currency: 'GHS',
+      isBusiness: true,
+      bucketId: 'job_app_building'
+    },
+    {
+      id: 'tx_personal_1',
+      amount: -65.00,
+      merchant: 'KFC Airport',
+      category: 'food',
+      date: '2026-05-24',
+      time: '13:20',
+      paymentMethod: 'Cash',
+      paymentLast4: '0000',
+      status: 'completed',
+      notes: 'Lunch with friends',
+      tags: ['weekend', 'food'],
+      currency: 'GHS',
+      isBusiness: false,
+      bucketId: 'job_food'
+    }
+  ];
 
   var SEED_BUDGETS = [];
+
+  var SEED_JOBS = [
+    { id: 'job_food', name: 'Food', assigned: 150.00, icon: 'utensils', color: '#10B981' },
+    { id: 'job_transport', name: 'Transport', assigned: 80.00, icon: 'car', color: '#F59E0B' },
+    { id: 'job_data', name: 'Data', assigned: 75.00, icon: 'wifi', color: '#06B6D4' },
+    { id: 'job_hostel', name: 'Hostel', assigned: 300.00, icon: 'home', color: '#7C3AED' },
+    { id: 'job_savings', name: 'Savings', assigned: 150.00, icon: 'piggy-bank', color: '#EC4899' },
+    { id: 'job_app_building', name: 'App Building', assigned: 100.00, icon: 'laptop', color: '#3B82F6' },
+    { id: 'job_family_support', name: 'Family Support', assigned: 90.00, icon: 'heart', color: '#EF4444' },
+    { id: 'job_emergency_stash', name: 'Emergency Stash', assigned: 50.00, icon: 'shield', color: '#8B5CF6' }
+  ];
 
   var SEED_GOALS = [];
 
   var SEED_USER = null;
+
+  var SEED_CLIENTS = [
+    { id: 'client_1', name: 'Kojo Mensah', company: 'Mensah Digital Solutions', email: 'kojo@mensahdigital.com', phone: '+233 24 123 4567', address: '12 Ring Road East, Accra' },
+    { id: 'client_2', name: 'Ama Serwaa', company: 'Glow Retail Group', email: 'ama@glowretail.gh', phone: '+233 27 987 6543', address: 'Osu Oxford Street, Accra' },
+    { id: 'client_3', name: 'Nii Laryea', company: 'Laryea Construction Ltd', email: 'nii@laryeaconstruction.com', phone: '+233 20 445 6678', address: 'Airport Residential Area, Accra' }
+  ];
+
+  var SEED_INVOICES = [
+    {
+      id: 'inv_1',
+      invoiceNumber: 'INV-2026-001',
+      clientId: 'client_1',
+      clientName: 'Kojo Mensah',
+      date: '2026-05-10',
+      dueDate: '2026-05-24',
+      items: [
+        { description: 'Freelance Software Development - Milestone 1', quantity: 1, rate: 1500 }
+      ],
+      taxRate: 5,
+      notes: 'Thank you for your business!',
+      status: 'paid',
+      amount: 1575.00,
+      txnId: 'tx_inv_1'
+    },
+    {
+      id: 'inv_2',
+      invoiceNumber: 'INV-2026-002',
+      clientId: 'client_2',
+      clientName: 'Ama Serwaa',
+      date: '2026-05-20',
+      dueDate: '2026-06-10',
+      items: [
+        { description: 'UI/UX Design Mockups', quantity: 1, rate: 800 },
+        { description: 'Brand Identity Strategy', quantity: 1, rate: 400 }
+      ],
+      taxRate: 0,
+      notes: 'Payment upon delivery.',
+      status: 'unpaid',
+      amount: 1200.00,
+      txnId: null
+    },
+    {
+      id: 'inv_3',
+      invoiceNumber: 'INV-2026-003',
+      clientId: 'client_3',
+      clientName: 'Nii Laryea',
+      date: '2026-05-02',
+      dueDate: '2026-05-16',
+      items: [
+        { description: 'Consulting Session', quantity: 4, rate: 250 }
+      ],
+      taxRate: 15,
+      notes: 'Late payments incur 2% interest per week.',
+      status: 'overdue',
+      amount: 1150.00,
+      txnId: null
+    }
+  ];
 
   var SEED_GAME = {
     level: 1,
@@ -197,7 +350,8 @@
     darkMode: false,
     notifications: { push: true, email: true, sms: true },
     biometricLock: true,
-    activeModeId: 'none'
+    activeModeId: 'none',
+    businessModeEnabled: true
   };
 
   // ═══════════════════════════════════════════════════════════
@@ -211,6 +365,9 @@
     if (SEED_USER !== null && localStorage.getItem(KEYS.user) === null) _write(KEYS.user, SEED_USER);
     if (localStorage.getItem(KEYS.game) === null)         _write(KEYS.game,         SEED_GAME);
     if (localStorage.getItem(KEYS.settings) === null)     _write(KEYS.settings,     SEED_SETTINGS);
+    if (localStorage.getItem(KEYS.clients) === null)      _write(KEYS.clients,      SEED_CLIENTS);
+    if (localStorage.getItem(KEYS.invoices) === null)     _write(KEYS.invoices,     SEED_INVOICES);
+    if (localStorage.getItem(KEYS.jobs) === null)         _write(KEYS.jobs,         SEED_JOBS);
   }
 
   var EMOJI_MIGRATION_RAN = false;
@@ -250,7 +407,7 @@
 
     function cleanIcon(icon) {
       if (!icon) return 'target';
-      if (emojiMap[icon]) return emojiMap[icon];
+      if (icon && Object.prototype.hasOwnProperty.call(emojiMap, icon)) return emojiMap[icon];
       if (icon.length <= 2 && !/^[a-zA-Z0-9]$/.test(icon)) {
         return 'target';
       }
@@ -349,7 +506,7 @@
         var activeMode = modes.find(function (m) { return m.id === activeModeId; });
         if (activeMode && activeMode.budgetOverrides) {
           list.forEach(function (b) {
-            if (activeMode.budgetOverrides[b.category] !== undefined) {
+            if (b.category && Object.prototype.hasOwnProperty.call(activeMode.budgetOverrides, b.category)) {
               b.limit = activeMode.budgetOverrides[b.category];
             }
           });
@@ -396,7 +553,7 @@
         var activeMode = modes.find(function (m) { return m.id === activeModeId; });
         if (activeMode && activeMode.goalPriorities) {
           list.forEach(function (g) {
-            if (activeMode.goalPriorities[g.id] !== undefined) {
+            if (g.id && Object.prototype.hasOwnProperty.call(activeMode.goalPriorities, g.id)) {
               g.priority = activeMode.goalPriorities[g.id];
             }
           });
@@ -855,10 +1012,11 @@
         }];
       }
 
-      var merchantGroups = {};
+      var merchantGroups = Object.create(null);
       txns.forEach(function (t) {
-        if (t.amount < 0) {
+        if (t.amount < 0 && t.merchant) {
           var key = t.merchant.trim().toLowerCase() + '_' + Math.abs(t.amount).toFixed(2);
+          if (key === '__proto__' || key === 'constructor' || key === 'prototype') return;
           merchantGroups[key] = merchantGroups[key] || [];
           merchantGroups[key].push(t);
         }
@@ -876,7 +1034,7 @@
             insights.push({
               type: 'recurring',
               title: 'Recurring Subscription Detected',
-              message: `We noticed you pay ${amt} regularly to <strong>${mName}</strong>. Consider reviewing this subscription if you don't use it.`,
+              message: 'We noticed you pay ' + amt + ' regularly to <strong>' + SavvySpend.escapeHtml(mName) + '</strong>. Consider reviewing this subscription if you don\'t use it.',
               icon: 'refresh-cw',
               color: '#3B82F6'
             });
@@ -901,7 +1059,7 @@
         insights.push({
           type: 'time',
           title: 'Late Night Spending',
-          message: `You spent <strong>${formattedLateAmt}</strong> on ${lateNightTx.length} transactions late at night. Sleep on it next time to avoid impulse buys!`,
+          message: 'You spent <strong>' + formattedLateAmt + '</strong> on ' + lateNightTx.length + ' transactions late at night. Sleep on it next time to avoid impulse buys!',
           icon: 'moon',
           color: '#8B5CF6'
         });
@@ -909,10 +1067,13 @@
 
       var regretTx = txns.filter(function (t) { return t.amount < 0 && t.rating === 'regret'; });
       if (regretTx.length >= 1) {
-        var regretMerchants = {};
+        var regretMerchants = Object.create(null);
         regretTx.forEach(function (t) {
-          var m = t.merchant.trim();
-          regretMerchants[m] = (regretMerchants[m] || 0) + Math.abs(t.amount);
+          if (t.merchant) {
+            var m = t.merchant.trim();
+            if (m === '__proto__' || m === 'constructor' || m === 'prototype') return;
+            regretMerchants[m] = (regretMerchants[m] || 0) + Math.abs(t.amount);
+          }
         });
 
         var worstMerchant = '';
@@ -928,7 +1089,7 @@
           insights.push({
             type: 'regret',
             title: 'High Regret Merchant',
-            message: `You spent <strong>${SavvySpend.formatCurrencyPlain(worstAmt)}</strong> at <strong>${worstMerchant}</strong> which you later regretted. Try to avoid this merchant!`,
+            message: 'You spent <strong>' + SavvySpend.formatCurrencyPlain(worstAmt) + '</strong> at <strong>' + SavvySpend.escapeHtml(worstMerchant) + '</strong> which you later regretted. Try to avoid this merchant!',
             icon: 'frown',
             color: '#EF4444'
           });
@@ -952,7 +1113,7 @@
         insights.push({
           type: 'acceleration',
           title: 'Spending Acceleration',
-          message: `Your spending this week is <strong>${percentIncrease}% higher</strong> than last week (${SavvySpend.formatCurrencyPlain(spentThisWeek)} vs ${SavvySpend.formatCurrencyPlain(spentLastWeek)}). Let's slow down!`,
+          message: 'Your spending this week is <strong>' + percentIncrease + '% higher</strong> than last week (' + SavvySpend.formatCurrencyPlain(spentThisWeek) + ' vs ' + SavvySpend.formatCurrencyPlain(spentLastWeek) + '). Let\'s slow down!',
           icon: 'trending-up',
           color: '#F59E0B'
         });
@@ -971,6 +1132,73 @@
       return insights;
     },
 
+    // ── Invoices ─────────────────────────────────────────────
+
+    getInvoices: function () {
+      return deepCopy(_read(KEYS.invoices) || []);
+    },
+
+    addInvoice: function (inv) {
+      var list = _read(KEYS.invoices) || [];
+      list.unshift(inv); // newest first
+      _write(KEYS.invoices, list);
+    },
+
+    updateInvoice: function (id, updates) {
+      var list = _read(KEYS.invoices) || [];
+      var idx = list.findIndex(function (inv) { return inv.id === id; });
+      if (idx !== -1) {
+        Object.assign(list[idx], updates);
+        _write(KEYS.invoices, list);
+      }
+    },
+
+    deleteInvoice: function (id) {
+      var list = _read(KEYS.invoices) || [];
+      list = list.filter(function (inv) { return inv.id !== id; });
+      _write(KEYS.invoices, list);
+    },
+
+    // ── Clients ──────────────────────────────────────────────
+
+    getClients: function () {
+      return deepCopy(_read(KEYS.clients) || []);
+    },
+
+    addClient: function (client) {
+      var list = _read(KEYS.clients) || [];
+      list.push(client);
+      _write(KEYS.clients, list);
+    },
+
+    updateClient: function (id, updates) {
+      var list = _read(KEYS.clients) || [];
+      var idx = list.findIndex(function (c) { return c.id === id; });
+      if (idx !== -1) {
+        Object.assign(list[idx], updates);
+        _write(KEYS.clients, list);
+      }
+    },
+
+    deleteClient: function (id) {
+      var list = _read(KEYS.clients) || [];
+      list = list.filter(function (c) { return c.id !== id; });
+      _write(KEYS.clients, list);
+      
+      // Also clean up client references in invoices
+      var invoices = _read(KEYS.invoices) || [];
+      var invUpdated = false;
+      invoices.forEach(function (inv) {
+        if (inv.clientId === id) {
+          inv.clientId = null;
+          invUpdated = true;
+        }
+      });
+      if (invUpdated) {
+        _write(KEYS.invoices, invoices);
+      }
+    },
+
     // ── CSV Export ────────────────────────────────────────────
 
     exportToCSV: function () {
@@ -979,7 +1207,10 @@
       var rows = [headers.join(',')];
 
       txns.forEach(function (t) {
-        var cat = window.CATEGORIES[t.category];
+        var cat = null;
+        if (t.category && t.category !== '__proto__' && t.category !== 'constructor' && t.category !== 'prototype') {
+          cat = window.CATEGORIES[t.category];
+        }
         var catName = cat ? cat.name : t.category;
         
         var ratingLabel = '';

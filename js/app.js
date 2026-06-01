@@ -286,7 +286,8 @@
       profile: 'Profile',
       journey: 'Journey',
       welcome: 'Welcome',
-      modes: 'MoneyModes'
+      modes: 'MoneyModes',
+      business: 'BusinessHub'
     };
 
     const pageName = routeMap[route] || 'Home';
@@ -328,7 +329,7 @@
       }
 
       // Show/hide navbar for detail pages and welcome page
-      const detailPages = ['goal', 'transaction', 'welcome', 'modes'];
+      const detailPages = ['goal', 'transaction', 'welcome', 'modes', 'business'];
       const navbarEl = document.getElementById('bottom-navbar');
       if (detailPages.includes(route)) {
         navbarEl.style.display = 'none';
@@ -450,6 +451,16 @@
     if (diffDays < 7)
       return d.toLocaleDateString('en-US', { weekday: 'short' });
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
+  App.escapeHtml = function (str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
   };
 
   App.generateId = function () {

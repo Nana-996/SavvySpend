@@ -69,6 +69,35 @@
         `;
       }
 
+      var businessBannerHtml = '';
+      if (settings.businessModeEnabled) {
+        var businessTxns = txns.filter(function (t) { return t.isBusiness; });
+        var bizRev = businessTxns.filter(function (t) { return t.amount > 0; }).reduce(function (sum, t) { return sum + t.amount; }, 0);
+        var bizExp = businessTxns.filter(function (t) { return t.amount < 0; }).reduce(function (sum, t) { return sum + Math.abs(t.amount); }, 0);
+        var bizProfit = bizRev - bizExp;
+        
+        businessBannerHtml = `
+          <!-- Business P&L Dashboard Quick Banner -->
+          <div class="card p-md mb-lg flex flex-between flex-center" style="border: 1px solid var(--orange); background: var(--orange-light); cursor: pointer;" onclick="SavvySpend.navigate('#/business')">
+            <div class="flex flex-center gap-md">
+              <div class="flex flex-center" style="width: 38px; height: 38px; border-radius: 50%; background: var(--orange); color: white;">
+                <i data-lucide="briefcase" style="width: 18px; height: 18px;"></i>
+              </div>
+              <div>
+                <h4 class="text-xs font-bold text-orange uppercase tracking-wider mb-xs" style="color: var(--orange);">Business Performance</h4>
+                <p class="text-sm font-semibold mt-xxs" style="margin: 0; color: var(--text-primary);">
+                  Net Profit: <strong style="color: ${bizProfit >= 0 ? 'var(--primary)' : 'var(--red)'};">${SavvySpend.formatCurrency(bizProfit)}</strong>
+                </p>
+              </div>
+            </div>
+            <div class="flex flex-center" style="color: var(--orange);">
+              <span class="text-xs font-semibold mr-xs">Hub</span>
+              <i data-lucide="chevron-right" style="width: 16px; height: 16px;"></i>
+            </div>
+          </div>
+        `;
+      }
+
       // Recent Transactions (top 5)
       var recentTxns = txns.slice(0, 5);
       var txnsHtml = '';
@@ -141,6 +170,7 @@
         </div>
 
         ${modeBannerHtml}
+        ${businessBannerHtml}
 
         <!-- Quick Actions Grid -->
         <div class="quick-actions flex gap-md mb-lg">

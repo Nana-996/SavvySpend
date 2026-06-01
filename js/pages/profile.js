@@ -583,6 +583,37 @@
                 <i data-lucide="chevron-right" class="chevron-icon-custom"></i>
               </div>
 
+              <!-- Business Mode toggle -->
+              <div class="settings-item-custom">
+                <div class="settings-item-left">
+                  <div class="settings-item-icon-wrapper-custom">
+                    <i data-lucide="briefcase"></i>
+                  </div>
+                  <div class="settings-item-text-custom">
+                    <span class="settings-item-title-custom">Business Mode</span>
+                    <span class="settings-item-subtitle-custom">Enable invoicing, client directory & tax estimates</span>
+                  </div>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="pref-businessmode" class="toggle-input" ${settings.businessModeEnabled ? 'checked' : ''}>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+
+              <!-- Business Hub Menu Item -->
+              <div class="settings-item-custom clickable" id="item-business-hub" style="display: ${settings.businessModeEnabled ? 'flex' : 'none'};" onclick="SavvySpend.navigate('#/business')">
+                <div class="settings-item-left">
+                  <div class="settings-item-icon-wrapper-custom" style="background: var(--orange-light); color: var(--orange);">
+                    <i data-lucide="line-chart"></i>
+                  </div>
+                  <div class="settings-item-text-custom">
+                    <span class="settings-item-title-custom">Business Hub</span>
+                    <span class="settings-item-subtitle-custom">Track P&L, invoices, clients, and taxes</span>
+                  </div>
+                </div>
+                <i data-lucide="chevron-right" class="chevron-icon-custom"></i>
+              </div>
+
               <!-- Currency selector -->
               <div class="settings-item-custom">
                 <div class="settings-item-left">
@@ -896,6 +927,17 @@
           var isPush = e.target.checked;
           DataStore.updateSettings({ notifications: { push: isPush } });
           SavvySpend.showToast('Notification preferences saved.', 'success');
+        });
+      }
+
+      // 3b. Business Mode toggle listener
+      var bizModeToggle = document.getElementById('pref-businessmode');
+      if (bizModeToggle) {
+        bizModeToggle.addEventListener('change', function (e) {
+          var isBiz = e.target.checked;
+          DataStore.updateSettings({ businessModeEnabled: isBiz });
+          SavvySpend.showToast(isBiz ? 'Business Mode enabled! Hub unlocked.' : 'Business Mode disabled.', 'success');
+          SavvySpend.handleRoute();
         });
       }
 
