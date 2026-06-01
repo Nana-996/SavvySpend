@@ -10,6 +10,12 @@
   var currentPeriod = 'monthly'; // 'weekly' or 'monthly'
   var compareEnabled = false;
 
+  function safeGet(obj, key) {
+    if (!obj) return undefined;
+    var desc = Object.getOwnPropertyDescriptor(obj, key);
+    return desc ? desc.value : undefined;
+  }
+
   var Analytics = {
     render: function (param) {
       var txns = DataStore.getTransactions();
@@ -19,19 +25,29 @@
       var totalSpent = 0;
       var prevSpent = 0;
 
+      function calculateSpendingForFilter(filterFn) {
+        return txns
+          .filter(filterFn)
+          .reduce(function (sum, t) {
+            var spent = 0;
+            if (t.amount < 0) {
+              spent += Math.abs(t.amount);
+            }
+            if (t.productCost !== undefined && t.productCost !== null) {
+              spent += t.productCost;
+            }
+            return sum + spent;
+          }, 0);
+      }
+
       var now = new Date();
       if (isWeekly) {
         // Current week (last 7 days)
         var oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
         var twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
         
-        totalSpent = txns
-          .filter(function (t) { return t.amount < 0 && new Date(t.date) >= oneWeekAgo; })
-          .reduce(function (sum, t) { return sum + Math.abs(t.amount); }, 0);
-          
-        prevSpent = txns
-          .filter(function (t) { return t.amount < 0 && new Date(t.date) >= twoWeeksAgo && new Date(t.date) < oneWeekAgo; })
-          .reduce(function (sum, t) { return sum + Math.abs(t.amount); }, 0);
+        totalSpent = calculateSpendingForFilter(function (t) { return new Date(t.date) >= oneWeekAgo; });
+        prevSpent = calculateSpendingForFilter(function (t) { return new Date(t.date) >= twoWeeksAgo && new Date(t.date) < oneWeekAgo; });
       } else {
         var currentYear = now.getFullYear();
         var currentMonth = now.getMonth(); // 0-11
@@ -41,13 +57,8 @@
         var prevMonth = currentMonth === 0 ? 11 : currentMonth - 1;
         var prevMonthStr = prevYear + '-' + String(prevMonth + 1).padStart(2, '0');
         
-        totalSpent = txns
-          .filter(function (t) { return t.amount < 0 && t.date.startsWith(currentMonthStr); })
-          .reduce(function (sum, t) { return sum + Math.abs(t.amount); }, 0);
-          
-        prevSpent = txns
-          .filter(function (t) { return t.amount < 0 && t.date.startsWith(prevMonthStr); })
-          .reduce(function (sum, t) { return sum + Math.abs(t.amount); }, 0);
+        totalSpent = calculateSpendingForFilter(function (t) { return t.date.startsWith(currentMonthStr); });
+        prevSpent = calculateSpendingForFilter(function (t) { return t.date.startsWith(prevMonthStr); });
       }
 
       // Calculate percentage change
@@ -88,23 +99,31 @@
       var oneWeekAgoDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
       txns.forEach(function (t) {
-        if (t.amount >= 0) return; // skip income
+        var spent = 0;
+        if (t.amount < 0) {
+          spent += Math.abs(t.amount);
+        }
+        if (t.productCost !== undefined && t.productCost !== null) {
+          spent += t.productCost;
+        }
+        if (spent === 0) return;
         
         var dateMatch = isWeekly ? (new Date(t.date) >= oneWeekAgoDate) : t.date.startsWith(filterDatePrefix);
         if (dateMatch) {
-          categoryTotals[t.category] = (categoryTotals[t.category] || 0) + Math.abs(t.amount);
+          var catKey = t.amount < 0 ? t.category : 'inventory';
+          categoryTotals[catKey] = (categoryTotals[catKey] || 0) + spent;
         }
       });
 
       // Sort categories by total spent
       var sortedCats = Object.keys(categoryTotals).map(function (key) {
-        var catInfo = window.CATEGORIES[key] || window.CATEGORIES.other;
+        var catInfo = safeGet(window.CATEGORIES, key) || window.CATEGORIES.other;
         return {
           key: key,
           name: catInfo.name,
           icon: catInfo.icon,
           color: catInfo.color,
-          value: categoryTotals[key]
+          value: safeGet(categoryTotals, key)
         };
       }).sort(function (a, b) { return b.value - a.value; });
 
@@ -114,21 +133,19 @@
 
       var legendHtml = sortedCats.map(function (c) {
         var pct = totalSpent > 0 ? Math.round((c.value / totalSpent) * 100) : 0;
-        return `
-          <div class="flex flex-between flex-center py-xs" style="border-bottom: 1px solid var(--border-light);">
-            <div class="flex flex-center gap-sm">
-              <span class="category-dot" style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background-color: ${c.color};"></span>
-              <span class="text-xs font-semibold text-primary-text flex flex-center gap-xs">
-                <i data-lucide="${c.icon}" style="width: 14px; height: 14px; color: ${c.color};"></i>
-                <span>${c.name}</span>
-              </span>
-            </div>
-            <div class="text-right">
-              <span class="text-xs font-bold text-primary-text">${SavvySpend.formatCurrencyPlain(c.value)}</span>
-              <span class="text-xxs text-secondary" style="font-size: 0.65rem; display: block;">${pct}%</span>
-            </div>
-          </div>
-        `;
+        return '<div class="flex flex-between flex-center py-xs" style="border-bottom: 1px solid var(--border-light);">' +
+          '<div class="flex flex-center gap-sm">' +
+            '<span class="category-dot" style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background-color: ' + SavvySpend.escapeHtml(c.color) + ';"></span>' +
+            '<span class="text-xs font-semibold text-primary-text flex flex-center gap-xs">' +
+              '<i data-lucide="' + SavvySpend.escapeHtml(c.icon) + '" style="width: 14px; height: 14px; color: ' + SavvySpend.escapeHtml(c.color) + ';"></i>' +
+              '<span>' + SavvySpend.escapeHtml(c.name) + '</span>' +
+            '</span>' +
+          '</div>' +
+          '<div class="text-right">' +
+            '<span class="text-xs font-bold text-primary-text">' + SavvySpend.escapeHtml(SavvySpend.formatCurrencyPlain(c.value)) + '</span>' +
+            '<span class="text-xxs text-secondary" style="font-size: 0.65rem; display: block;">' + pct + '%</span>' +
+          '</div>' +
+        '</div>';
       }).join('');
 
       if (sortedCats.length === 0) {
@@ -145,20 +162,30 @@
         
         for (var i = 6; i >= 0; i--) {
           var d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-          trendLabels.push(weekdays[d.getDay()]);
+          trendLabels.push(safeGet(weekdays, d.getDay()));
           
           var dateStr = d.toISOString().split('T')[0];
           var daySpent = txns
-            .filter(function (t) { return t.amount < 0 && t.date === dateStr; })
-            .reduce(function (sum, t) { return sum + Math.abs(t.amount); }, 0);
+            .filter(function (t) { return t.date === dateStr; })
+            .reduce(function (sum, t) {
+              var spent = 0;
+              if (t.amount < 0) spent += Math.abs(t.amount);
+              if (t.productCost !== undefined && t.productCost !== null) spent += t.productCost;
+              return sum + spent;
+            }, 0);
           trendData.push(daySpent);
           
           if (compareEnabled) {
             var compD = new Date(now.getTime() - (i + 7) * 24 * 60 * 60 * 1000);
             var compDateStr = compD.toISOString().split('T')[0];
             var compDaySpent = txns
-              .filter(function (t) { return t.amount < 0 && t.date === compDateStr; })
-              .reduce(function (sum, t) { return sum + Math.abs(t.amount); }, 0);
+              .filter(function (t) { return t.date === compDateStr; })
+              .reduce(function (sum, t) {
+                var spent = 0;
+                if (t.amount < 0) spent += Math.abs(t.amount);
+                if (t.productCost !== undefined && t.productCost !== null) spent += t.productCost;
+                return sum + spent;
+              }, 0);
             compareTrendData.push(compDaySpent);
           }
         }
@@ -172,20 +199,30 @@
             targetMonth += 12;
             targetYear -= 1;
           }
-          trendLabels.push(monthNames[targetMonth]);
+          trendLabels.push(safeGet(monthNames, targetMonth));
           
           var prefix = targetYear + '-' + String(targetMonth + 1).padStart(2, '0');
           var monthSpent = txns
-            .filter(function (t) { return t.amount < 0 && t.date.startsWith(prefix); })
-            .reduce(function (sum, t) { return sum + Math.abs(t.amount); }, 0);
+            .filter(function (t) { return t.date.startsWith(prefix); })
+            .reduce(function (sum, t) {
+              var spent = 0;
+              if (t.amount < 0) spent += Math.abs(t.amount);
+              if (t.productCost !== undefined && t.productCost !== null) spent += t.productCost;
+              return sum + spent;
+            }, 0);
           trendData.push(monthSpent);
           
           if (compareEnabled) {
             var compYear = targetYear - 1;
             var compPrefix = compYear + '-' + String(targetMonth + 1).padStart(2, '0');
             var compMonthSpent = txns
-              .filter(function (t) { return t.amount < 0 && t.date.startsWith(compPrefix); })
-              .reduce(function (sum, t) { return sum + Math.abs(t.amount); }, 0);
+              .filter(function (t) { return t.date.startsWith(compPrefix); })
+              .reduce(function (sum, t) {
+                var spent = 0;
+                if (t.amount < 0) spent += Math.abs(t.amount);
+                if (t.productCost !== undefined && t.productCost !== null) spent += t.productCost;
+                return sum + spent;
+              }, 0);
             compareTrendData.push(compMonthSpent);
           }
         }
@@ -225,199 +262,199 @@
 
       var insights = DataStore.getHabitInsights();
 
-      return `
-        <div class="page-header mt-sm mb-md flex flex-between flex-center">
-          <div>
-            <h2 class="page-title text-2xl font-bold">Analytics</h2>
-            <p class="page-subtitle text-xs text-secondary">Analyze your spending behaviors</p>
-          </div>
-          <button class="btn btn-outline btn-sm flex flex-center gap-xs" id="btn-csv-export" style="font-size: 0.75rem;">
-            <i data-lucide="download" style="width: 14px; height: 14px;"></i> Export CSV
-          </button>
-        </div>
+      var html = '';
+      html += '<div class="page-header mt-sm mb-md flex flex-between flex-center">';
+      html += '  <div>';
+      html += '    <h2 class="page-title text-2xl font-bold">Analytics</h2>';
+      html += '    <p class="page-subtitle text-xs text-secondary">Analyze your spending behaviors</p>';
+      html += '  </div>';
+      html += '  <button class="btn btn-outline btn-sm flex flex-center gap-xs" id="btn-csv-export" style="font-size: 0.75rem;">';
+      html += '    <i data-lucide="download" style="width: 14px; height: 14px;"></i> Export CSV';
+      html += '  </button>';
+      html += '</div>';
 
-        <!-- Period Toggle Tabs -->
-        <div class="form-group flex-center mb-lg">
-          <div class="tab-group" style="width: 100%;">
-            <button class="tab ${!isWeekly ? 'active' : ''} w-full" id="tab-monthly" style="flex: 1;">Monthly</button>
-            <button class="tab ${isWeekly ? 'active' : ''} w-full" id="tab-weekly" style="flex: 1;">Weekly</button>
-          </div>
-        </div>
+      // Period Toggle Tabs
+      html += '<div class="form-group flex-center mb-lg">';
+      html += '  <div class="tab-group" style="width: 100%;">';
+      html += '    <button class="tab ' + (!isWeekly ? 'active' : '') + ' w-full" id="tab-monthly" style="flex: 1;">Monthly</button>';
+      html += '    <button class="tab ' + (isWeekly ? 'active' : '') + ' w-full" id="tab-weekly" style="flex: 1;">Weekly</button>';
+      html += '  </div>';
+      html += '</div>';
 
-        <!-- Total Spent Metrics -->
-        <div class="card p-lg mb-lg bg-card" style="border: 1px solid var(--border);">
-          <span class="text-xs text-secondary uppercase font-semibold">Total Spent</span>
-          <div class="flex flex-between flex-center mt-xs">
-            <h2 class="text-2xl font-extrabold text-primary-text" style="letter-spacing: -0.5px;">${formattedTotal}</h2>
-            <div class="flex flex-center gap-xs text-xs ${pctClass}">
-              <i data-lucide="${pctIcon}" style="width: 16px; height: 16px;"></i>
-              <span>${pctChangeText}</span>
-            </div>
-          </div>
-        </div>
+      // Total Spent Metrics
+      html += '<div class="card p-lg mb-lg bg-card" style="border: 1px solid var(--border);">';
+      html += '  <span class="text-xs text-secondary uppercase font-semibold">Total Spent</span>';
+      html += '  <div class="flex flex-between flex-center mt-xs">';
+      html += '    <h2 class="text-2xl font-extrabold text-primary-text" style="letter-spacing: -0.5px;">' + SavvySpend.escapeHtml(formattedTotal) + '</h2>';
+      html += '    <div class="flex flex-center gap-xs text-xs ' + SavvySpend.escapeHtml(pctClass) + '">';
+      html += '      <i data-lucide="' + SavvySpend.escapeHtml(pctIcon) + '" style="width: 16px; height: 16px;"></i>';
+      html += '      <span>' + SavvySpend.escapeHtml(pctChangeText) + '</span>';
+      html += '    </div>';
+      html += '  </div>';
+      html += '</div>';
 
-        <!-- Trend Bar Chart Section -->
-        <div class="card p-md mb-lg bg-card" style="border: 1px solid var(--border);">
-          <div class="flex flex-between flex-center mb-md">
-            <h4 class="text-xs font-bold text-secondary uppercase tracking-wider">Spending Trends</h4>
-            <div class="flex flex-center gap-sm">
-              <span class="text-xxs text-secondary" style="font-size: 0.7rem;">Compare</span>
-              <label class="toggle-switch">
-                <input type="checkbox" id="compare-toggle" class="toggle-input" ${compareEnabled ? 'checked' : ''}>
-                <span class="toggle-slider"></span>
-              </label>
-            </div>
-          </div>
-          <div class="chart-container" style="position: relative; height: 180px;">
-            <canvas id="barTrendChart"></canvas>
-          </div>
-        </div>
+      // Trend Bar Chart Section
+      html += '<div class="card p-md mb-lg bg-card" style="border: 1px solid var(--border);">';
+      html += '  <div class="flex flex-between flex-center mb-md">';
+      html += '    <h4 class="text-xs font-bold text-secondary uppercase tracking-wider">Spending Trends</h4>';
+      html += '    <div class="flex flex-center gap-sm">';
+      html += '      <span class="text-xxs text-secondary" style="font-size: 0.7rem;">Compare</span>';
+      html += '      <label class="toggle-switch">';
+      html += '        <input type="checkbox" id="compare-toggle" class="toggle-input" ' + (compareEnabled ? 'checked' : '') + '>';
+      html += '        <span class="toggle-slider"></span>';
+      html += '      </label>';
+      html += '    </div>';
+      html += '  </div>';
+      html += '  <div class="chart-container" style="position: relative; height: 180px;">';
+      html += '    <canvas id="barTrendChart"></canvas>';
+      html += '  </div>';
+      html += '</div>';
 
-        <!-- Category Breakdown Donut Chart Section -->
-        <div class="card p-md mb-xl bg-card" style="border: 1px solid var(--border);">
-          <h4 class="text-xs font-bold text-secondary uppercase tracking-wider mb-md">Top Categories</h4>
-          
-          ${sortedCats.length > 0 ? `
-            <div class="flex flex-center mb-md" style="height: 160px; position: relative;">
-              <canvas id="donutCategoryChart"></canvas>
-            </div>
-            <div class="category-legend mt-md">
-              ${legendHtml}
-            </div>
-          ` : `
-            <div class="text-center py-lg text-secondary text-sm">
-              No transactions recorded for this period.
-            </div>
-          `}
-        </div>
+      // Category Breakdown Donut Chart Section
+      html += '<div class="card p-md mb-xl bg-card" style="border: 1px solid var(--border);">';
+      html += '  <h4 class="text-xs font-bold text-secondary uppercase tracking-wider mb-md">Top Categories</h4>';
+      if (sortedCats.length > 0) {
+        html += '  <div class="flex flex-center mb-md" style="height: 160px; position: relative;">';
+        html += '    <canvas id="donutCategoryChart"></canvas>';
+        html += '  </div>';
+        html += '  <div class="category-legend mt-md">';
+        html += legendHtml;
+        html += '  </div>';
+      } else {
+        html += '  <div class="text-center py-lg text-secondary text-sm">';
+        html += '    No transactions recorded for this period.';
+        html += '  </div>';
+      }
+      html += '</div>';
 
-        <!-- Regret Tracker Section -->
-        <div class="card p-md mb-lg bg-card" style="border: 1px solid var(--border);">
-          <div class="flex flex-between flex-center mb-md" style="display: flex; justify-content: space-between; align-items: center;">
-            <h4 class="text-xs font-bold text-secondary uppercase tracking-wider">Regret Tracker</h4>
-            <span class="text-xs font-bold text-negative">${SavvySpend.formatCurrencyPlain(totalRegretSpent)} in Regrets</span>
-          </div>
-          
-          ${totalRatedCount > 0 ? `
-            <div class="flex rounded-full overflow-hidden mb-md" style="height: 8px; background: var(--border-light); font-size: 0px; display: flex; border-radius: 9999px;">
-              <div style="width: ${worthPct}%; background-color: #10B981; height: 100%;" title="Worth It: ${worthPct}%"></div>
-              <div style="width: ${neutralPct}%; background-color: #9CA3AF; height: 100%;" title="Neutral: ${neutralPct}%"></div>
-              <div style="width: ${regretPct}%; background-color: #EF4444; height: 100%;" title="Regret: ${regretPct}%"></div>
-            </div>
-            
-            <div class="flex flex-between flex-center text-xs" style="display: flex; justify-content: space-between; align-items: center;">
-              <div class="flex flex-center gap-xs" style="display: flex; align-items: center; gap: 4px;">
-                <span class="category-dot" style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: #10B981;"></span>
-                <span class="text-secondary">Worth It: <strong>${worthPct}%</strong></span>
-              </div>
-              <div class="flex flex-center gap-xs" style="display: flex; align-items: center; gap: 4px;">
-                <span class="category-dot" style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: #9CA3AF;"></span>
-                <span class="text-secondary">Neutral: <strong>${neutralPct}%</strong></span>
-              </div>
-              <div class="flex flex-center gap-xs" style="display: flex; align-items: center; gap: 4px;">
-                <span class="category-dot" style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: #EF4444;"></span>
-                <span class="text-secondary">Regret: <strong>${regretPct}%</strong></span>
-              </div>
-            </div>
-          ` : `
-            <div class="text-center py-md text-secondary text-xs">
-              No transactions recorded for this period.
-            </div>
-          `}
-        </div>
+      // Regret Tracker Section
+      html += '<div class="card p-md mb-lg bg-card" style="border: 1px solid var(--border);">';
+      html += '  <div class="flex flex-between flex-center mb-md" style="display: flex; justify-content: space-between; align-items: center;">';
+      html += '    <h4 class="text-xs font-bold text-secondary uppercase tracking-wider">Regret Tracker</h4>';
+      html += '    <span class="text-xs font-bold text-negative">' + SavvySpend.escapeHtml(SavvySpend.formatCurrencyPlain(totalRegretSpent)) + ' in Regrets</span>';
+      html += '  </div>';
+      if (totalRatedCount > 0) {
+        html += '  <div class="flex rounded-full overflow-hidden mb-md" style="height: 8px; background: var(--border-light); font-size: 0px; display: flex; border-radius: 9999px;">';
+        html += '    <div style="width: ' + worthPct + '%; background-color: #10B981; height: 100%;" title="Worth It: ' + worthPct + '%"></div>';
+        html += '    <div style="width: ' + neutralPct + '%; background-color: #9CA3AF; height: 100%;" title="Neutral: ' + neutralPct + '%"></div>';
+        html += '    <div style="width: ' + regretPct + '%; background-color: #EF4444; height: 100%;" title="Regret: ' + regretPct + '%"></div>';
+        html += '  </div>';
+        html += '  ';
+        html += '  <div class="flex flex-between flex-center text-xs" style="display: flex; justify-content: space-between; align-items: center;">';
+        html += '    <div class="flex flex-center gap-xs" style="display: flex; align-items: center; gap: 4px;">';
+        html += '      <span class="category-dot" style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: #10B981;"></span>';
+        html += '      <span class="text-secondary">Worth It: <strong>' + worthPct + '%</strong></span>';
+        html += '    </div>';
+        html += '    <div class="flex flex-center gap-xs" style="display: flex; align-items: center; gap: 4px;">';
+        html += '      <span class="category-dot" style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: #9CA3AF;"></span>';
+        html += '      <span class="text-secondary">Neutral: <strong>' + neutralPct + '%</strong></span>';
+        html += '    </div>';
+        html += '    <div class="flex flex-center gap-xs" style="display: flex; align-items: center; gap: 4px;">';
+        html += '      <span class="category-dot" style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: #EF4444;"></span>';
+        html += '      <span class="text-secondary">Regret: <strong>' + regretPct + '%</strong></span>';
+        html += '    </div>';
+        html += '  </div>';
+      } else {
+        html += '  <div class="text-center py-md text-secondary text-xs">';
+        html += '    No transactions recorded for this period.';
+        html += '  </div>';
+      }
+      html += '</div>';
 
-        <!-- Nana Habits & Patterns Section -->
-        <div class="card p-md mb-lg bg-card" style="border: 1px solid var(--border);">
-          <h4 class="text-xs font-bold text-secondary uppercase tracking-wider mb-md">Nana Habits & Patterns</h4>
-          <div class="flex flex-col gap-sm" style="display: flex; flex-direction: column; gap: 12px;">
-            ${insights.map(function (insight, index) {
-              var isLast = index === insights.length - 1;
-              var borderStyle = isLast ? '' : 'border-bottom: 1px solid var(--border-light); padding-bottom: 12px;';
-              return `
-                <div class="flex gap-md py-sm" style="${borderStyle} align-items: flex-start; display: flex; gap: 12px;">
-                  <div class="flex-center" style="width: 36px; height: 36px; border-radius: 50%; background-color: ${insight.color}15; color: ${insight.color}; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
-                    <i data-lucide="${insight.icon}" style="width: 18px; height: 18px;"></i>
-                  </div>
-                  <div style="flex: 1;">
-                    <h5 class="text-xs font-bold text-primary-text mb-xs" style="margin: 0 0 4px 0;">${insight.title}</h5>
-                    <p class="text-xs text-secondary" style="margin: 0; line-height: 1.4;">${insight.message}</p>
-                  </div>
-                </div>
-              `;
-            }).join('')}
-          </div>
-        </div>
+      // Nana Habits & Patterns Section
+      html += '<div class="card p-md mb-lg bg-card" style="border: 1px solid var(--border);">';
+      html += '  <h4 class="text-xs font-bold text-secondary uppercase tracking-wider mb-md">Nana Habits & Patterns</h4>';
+      html += '  <div class="flex flex-col gap-sm" style="display: flex; flex-direction: column; gap: 12px;">';
+      
+      var habitsHtml = insights.map(function (insight, index) {
+        var isLast = index === insights.length - 1;
+        var borderStyle = isLast ? '' : 'border-bottom: 1px solid var(--border-light); padding-bottom: 12px;';
+        return '<div class="flex gap-md py-sm" style="' + borderStyle + ' align-items: flex-start; display: flex; gap: 12px;">' +
+          '<div class="flex-center" style="width: 36px; height: 36px; border-radius: 50%; background-color: ' + SavvySpend.escapeHtml(insight.color) + '15; color: ' + SavvySpend.escapeHtml(insight.color) + '; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">' +
+            '<i data-lucide="' + SavvySpend.escapeHtml(insight.icon) + '" style="width: 18px; height: 18px;"></i>' +
+          '</div>' +
+          '<div style="flex: 1;">' +
+            '<h5 class="text-xs font-bold text-primary-text mb-xs" style="margin: 0 0 4px 0;">' + SavvySpend.escapeHtml(insight.title) + '</h5>' +
+            '<p class="text-xs text-secondary" style="margin: 0; line-height: 1.4;">' + SavvySpend.escapeHtml(insight.message) + '</p>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+      
+      html += habitsHtml;
+      html += '  </div>';
+      html += '</div>';
 
+      // Smart Spending Insight Card
+      html += '<div class="card p-md mb-md insight-card" style="border-left: 4px solid var(--purple); background: var(--bg-secondary);">';
+      html += '  <div class="flex gap-md">';
+      html += '    <i data-lucide="sparkles" style="width: 20px; height: 20px; color: var(--purple);"></i>';
+      html += '    <div>';
+      html += '      <h4 class="text-xs font-bold text-secondary uppercase tracking-wider mb-xs">Ai Insight</h4>';
+      html += '      <p class="text-sm text-primary-text font-medium" style="margin: 0; line-height: 1.4;">';
+      
+      var aiInsight = '';
+      if (isWeekly) {
+        var peakDay = '';
+        var peakAmount = 0;
+        var weekdaysList = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        var daySpending = {};
+        
+        for (var i = 6; i >= 0; i--) {
+          var d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+          var dateStr = d.toISOString().split('T')[0];
+          var dayName = safeGet(weekdaysList, d.getDay());
+          var daySpent = txns
+            .filter(function (t) { return t.amount < 0 && t.date === dateStr; })
+            .reduce(function (sum, t) { return sum + Math.abs(t.amount); }, 0);
+          daySpending[dayName] = (safeGet(daySpending, dayName) || 0) + daySpent;
+        }
+        
+        Object.keys(daySpending).forEach(function (day) {
+          var currentDaySpent = safeGet(daySpending, day);
+          if (currentDaySpent > peakAmount) {
+            peakAmount = currentDaySpent;
+            peakDay = day;
+          }
+        });
 
-        <!-- Smart Spending Insight Card -->
-        <div class="card p-md mb-md insight-card" style="border-left: 4px solid var(--purple); background: var(--bg-secondary);">
-          <div class="flex gap-md">
-            <i data-lucide="sparkles" style="width: 20px; height: 20px; color: var(--purple);"></i>
-            <div>
-              <h4 class="text-xs font-bold text-secondary uppercase tracking-wider mb-xs">Ai Insight</h4>
-              <p class="text-sm text-primary-text font-medium" style="margin: 0; line-height: 1.4;">
-                ${(function() {
-                  var aiInsight = '';
-                  if (isWeekly) {
-                    var peakDay = '';
-                    var peakAmount = 0;
-                    var weekdaysList = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-                    var daySpending = {};
-                    
-                    for (var i = 6; i >= 0; i--) {
-                      var d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-                      var dateStr = d.toISOString().split('T')[0];
-                      var dayName = weekdaysList[d.getDay()];
-                      var daySpent = txns
-                        .filter(function (t) { return t.amount < 0 && t.date === dateStr; })
-                        .reduce(function (sum, t) { return sum + Math.abs(t.amount); }, 0);
-                      daySpending[dayName] = (daySpending[dayName] || 0) + daySpent;
-                    }
-                    
-                    Object.keys(daySpending).forEach(function (day) {
-                      if (daySpending[day] > peakAmount) {
-                        peakAmount = daySpending[day];
-                        peakDay = day;
-                      }
-                    });
+        if (peakAmount > 0) {
+          aiInsight = 'Your daily spending peaked on <strong>' + SavvySpend.escapeHtml(peakDay) + '</strong> (spent ' + SavvySpend.escapeHtml(SavvySpend.formatCurrencyPlain(peakAmount)) + '). Try checking your transactions on that day to see where you can optimize!';
+        } else {
+          aiInsight = 'Start logging your daily transactions to receive personalized weekly spending insights.';
+        }
+      } else {
+        var topCatName = '';
+        var topCatValue = 0;
+        if (sortedCats.length > 0) {
+          topCatName = sortedCats[0].name;
+          topCatValue = sortedCats[0].value;
+        }
 
-                    if (peakAmount > 0) {
-                      aiInsight = `Your daily spending peaked on <strong>${peakDay}</strong> (spent ${SavvySpend.formatCurrencyPlain(peakAmount)}). Try checking your transactions on that day to see where you can optimize!`;
-                    } else {
-                      aiInsight = `Start logging your daily transactions to receive personalized weekly spending insights.`;
-                    }
-                  } else {
-                    var topCatName = '';
-                    var topCatValue = 0;
-                    if (sortedCats.length > 0) {
-                      topCatName = sortedCats[0].name;
-                      topCatValue = sortedCats[0].value;
-                    }
+        var goals = DataStore.getGoals();
+        var activeGoal = goals.length > 0 ? goals[0] : null;
 
-                    var goals = DataStore.getGoals();
-                    var activeGoal = goals.length > 0 ? goals[0] : null;
+        if (topCatValue > 0) {
+          if (activeGoal) {
+            aiInsight = 'Your highest spending this month was in <strong>' + SavvySpend.escapeHtml(topCatName) + '</strong> (' + SavvySpend.escapeHtml(SavvySpend.formatCurrencyPlain(topCatValue)) + '). Cutting back slightly on this category next month will help you fund your <strong>' + SavvySpend.escapeHtml(activeGoal.name) + '</strong> goal even faster!';
+          } else {
+            aiInsight = 'Your highest spending this month was in <strong>' + SavvySpend.escapeHtml(topCatName) + '</strong> (' + SavvySpend.escapeHtml(SavvySpend.formatCurrencyPlain(topCatValue)) + '). Consider setting a budget for this category to stay on track.';
+          }
+        } else {
+          if (activeGoal) {
+            aiInsight = 'Set up a budget or log your first transaction this month to see how your spending habits impact your <strong>' + SavvySpend.escapeHtml(activeGoal.name) + '</strong> goal.';
+          } else {
+            aiInsight = 'Create a custom budget and log your expenses to see personalized AI insights here.';
+          }
+        }
+      }
 
-                    if (topCatValue > 0) {
-                      if (activeGoal) {
-                        aiInsight = `Your highest spending this month was in <strong>${topCatName}</strong> (${SavvySpend.formatCurrencyPlain(topCatValue)}). Cutting back slightly on this category next month will help you fund your <strong>${activeGoal.name}</strong> goal even faster!`;
-                      } else {
-                        aiInsight = `Your highest spending this month was in <strong>${topCatName}</strong> (${SavvySpend.formatCurrencyPlain(topCatValue)}). Consider setting a budget for this category to stay on track.`;
-                      }
-                    } else {
-                      if (activeGoal) {
-                        aiInsight = `Set up a budget or log your first transaction this month to see how your spending habits impact your <strong>${activeGoal.name}</strong> goal.`;
-                      } else {
-                        aiInsight = `Create a custom budget and log your expenses to see personalized AI insights here.`;
-                      }
-                    }
-                  }
-                  return aiInsight;
-                })()}
-              </p>
-            </div>
-          </div>
-        </div>
-      `;
+      html += aiInsight;
+      html += '      </p>';
+      html += '    </div>';
+      html += '  </div>';
+      html += '</div>';
+
+      return html;
     },
 
     afterRender: function () {
@@ -435,20 +472,30 @@
         
         for (var i = 6; i >= 0; i--) {
           var d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-          trendLabels.push(weekdays[d.getDay()]);
+          trendLabels.push(safeGet(weekdays, d.getDay()));
           
           var dateStr = d.toISOString().split('T')[0];
           var daySpent = txns
-            .filter(function (t) { return t.amount < 0 && t.date === dateStr; })
-            .reduce(function (sum, t) { return sum + Math.abs(t.amount); }, 0);
+            .filter(function (t) { return t.date === dateStr; })
+            .reduce(function (sum, t) {
+              var spent = 0;
+              if (t.amount < 0) spent += Math.abs(t.amount);
+              if (t.productCost !== undefined && t.productCost !== null) spent += t.productCost;
+              return sum + spent;
+            }, 0);
           trendData.push(daySpent);
           
           if (compareEnabled) {
             var compD = new Date(now.getTime() - (i + 7) * 24 * 60 * 60 * 1000);
             var compDateStr = compD.toISOString().split('T')[0];
             var compDaySpent = txns
-              .filter(function (t) { return t.amount < 0 && t.date === compDateStr; })
-              .reduce(function (sum, t) { return sum + Math.abs(t.amount); }, 0);
+              .filter(function (t) { return t.date === compDateStr; })
+              .reduce(function (sum, t) {
+                var spent = 0;
+                if (t.amount < 0) spent += Math.abs(t.amount);
+                if (t.productCost !== undefined && t.productCost !== null) spent += t.productCost;
+                return sum + spent;
+              }, 0);
             compareTrendData.push(compDaySpent);
           }
         }
@@ -462,20 +509,30 @@
             targetMonth += 12;
             targetYear -= 1;
           }
-          trendLabels.push(monthNames[targetMonth]);
+          trendLabels.push(safeGet(monthNames, targetMonth));
           
           var prefix = targetYear + '-' + String(targetMonth + 1).padStart(2, '0');
           var monthSpent = txns
-            .filter(function (t) { return t.amount < 0 && t.date.startsWith(prefix); })
-            .reduce(function (sum, t) { return sum + Math.abs(t.amount); }, 0);
+            .filter(function (t) { return t.date.startsWith(prefix); })
+            .reduce(function (sum, t) {
+              var spent = 0;
+              if (t.amount < 0) spent += Math.abs(t.amount);
+              if (t.productCost !== undefined && t.productCost !== null) spent += t.productCost;
+              return sum + spent;
+            }, 0);
           trendData.push(monthSpent);
           
           if (compareEnabled) {
             var compYear = targetYear - 1;
             var compPrefix = compYear + '-' + String(targetMonth + 1).padStart(2, '0');
             var compMonthSpent = txns
-              .filter(function (t) { return t.amount < 0 && t.date.startsWith(compPrefix); })
-              .reduce(function (sum, t) { return sum + Math.abs(t.amount); }, 0);
+              .filter(function (t) { return t.date.startsWith(compPrefix); })
+              .reduce(function (sum, t) {
+                var spent = 0;
+                if (t.amount < 0) spent += Math.abs(t.amount);
+                if (t.productCost !== undefined && t.productCost !== null) spent += t.productCost;
+                return sum + spent;
+              }, 0);
             compareTrendData.push(compMonthSpent);
           }
         }
@@ -499,20 +556,29 @@
         var oneWeekAgoDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
         txns.forEach(function (t) {
-          if (t.amount >= 0) return;
+          var spent = 0;
+          if (t.amount < 0) {
+            spent += Math.abs(t.amount);
+          }
+          if (t.productCost !== undefined && t.productCost !== null) {
+            spent += t.productCost;
+          }
+          if (spent === 0) return;
+          
           var dateMatch = isWeekly ? (new Date(t.date) >= oneWeekAgoDate) : t.date.startsWith(filterDatePrefix);
           if (dateMatch) {
-            categoryTotals[t.category] = (categoryTotals[t.category] || 0) + Math.abs(t.amount);
-            totalSpent += Math.abs(t.amount);
+            var catKey = t.amount < 0 ? t.category : 'inventory';
+            categoryTotals[catKey] = (safeGet(categoryTotals, catKey) || 0) + spent;
+            totalSpent += spent;
           }
         });
 
         var sortedCats = Object.keys(categoryTotals).map(function (key) {
-          var catInfo = window.CATEGORIES[key] || window.CATEGORIES.other;
+          var catInfo = safeGet(window.CATEGORIES, key) || window.CATEGORIES.other;
           return {
             name: catInfo.name,
             color: catInfo.color,
-            value: categoryTotals[key]
+            value: safeGet(categoryTotals, key)
           };
         }).sort(function (a, b) { return b.value - a.value; });
 

@@ -38,141 +38,256 @@
         return '<option value="' + SavvySpend.escapeHtml(inv.id) + '">' + SavvySpend.escapeHtml(inv.invoiceNumber) + ' - ' + SavvySpend.escapeHtml(inv.clientName) + ' (' + SavvySpend.formatCurrencyPlain(inv.amount) + ')</option>';
       }).join('');
 
-      var html = `
-        <div class="modal-header flex flex-between">
-          <h3 class="modal-title">Add Transaction</h3>
-          <button class="btn-icon" onclick="SavvySpend.closeModal()"><i data-lucide="x"></i></button>
-        </div>
-        <form id="txn-form" class="mt-md">
-          <div class="form-group flex-center mb-md">
-            <div class="tab-group" style="width: 100%;">
-              <button type="button" class="tab active w-full" id="btn-expense" style="flex: 1;">Expense</button>
-              <button type="button" class="tab w-full" id="btn-income" style="flex: 1;">Income</button>
-            </div>
-            <input type="hidden" id="txn-type" value="expense">
-          </div>
+      var html = '<div class="modal-header flex flex-between">' +
+        '<h3 class="modal-title">Add Transaction</h3>' +
+        '<button class="btn-icon" onclick="SavvySpend.closeModal()"><i data-lucide="x"></i></button>' +
+        '</div>' +
+        '<form id="txn-form" class="mt-md" style="max-height: 70vh; overflow-y: auto; padding-right: 6px;">' +
+        '<div class="form-group flex-center mb-md">' +
+        '<div class="tab-group" style="width: 100%;">' +
+        '<button type="button" class="tab active w-full" id="btn-expense" style="flex: 1;">Expense</button>' +
+        '<button type="button" class="tab w-full" id="btn-income" style="flex: 1;">Income</button>' +
+        '</div>' +
+        '<input type="hidden" id="txn-type" value="expense">' +
+        '</div>' +
 
-          <!-- Business Transaction Toggle -->
-          <div class="form-group mt-md flex flex-between flex-center" style="display: flex; align-items: center; justify-content: space-between; background: var(--bg-secondary); padding: 8px 12px; border-radius: var(--radius-md); border: 1px solid var(--border-light);">
-            <label class="form-label" for="txn-is-business" style="margin-bottom: 0; font-weight: 700; color: var(--text-primary);">💼 Business Transaction?</label>
-            <label class="toggle-switch">
-              <input type="checkbox" id="txn-is-business" class="toggle-input">
-              <span class="toggle-slider"></span>
-            </label>
-          </div>
+        '<!-- Business Transaction Toggle -->' +
+        '<div class="form-group mt-md flex flex-between flex-center" style="display: flex; align-items: center; justify-content: space-between; background: var(--bg-secondary); padding: 8px 12px; border-radius: var(--radius-md); border: 1px solid var(--border-light);">' +
+        '<label class="form-label" for="txn-is-business" style="margin-bottom: 0; font-weight: 700; color: var(--text-primary);">💼 Business Transaction?</label>' +
+        '<label class="toggle-switch">' +
+        '<input type="checkbox" id="txn-is-business" class="toggle-input">' +
+        '<span class="toggle-slider"></span>' +
+        '</label>' +
+        '</div>' +
 
-          <div class="form-group mt-md">
-            <label class="form-label" for="txn-amount">Amount</label>
-            <div style="position: relative;">
-              <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-weight: 600; color: var(--text-primary);">${currencySymbol}</span>
-              <input class="form-input" type="number" step="0.01" id="txn-amount" placeholder="0.00" required style="padding-left: 58px;">
-            </div>
-          </div>
+        '<!-- Amount (For general input) -->' +
+        '<div class="form-group mt-md" id="group-amount">' +
+        '<label class="form-label" for="txn-amount" id="lbl-txn-amount">Amount</label>' +
+        '<div style="position: relative;">' +
+        '<span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-weight: 600; color: var(--text-primary);">' + SavvySpend.escapeHtml(currencySymbol) + '</span>' +
+        '<input class="form-input" type="number" step="0.01" id="txn-amount" placeholder="0.00" required style="padding-left: 58px;">' +
+        '</div>' +
+        '</div>' +
 
-          <div class="form-group mt-md">
-            <label class="form-label" for="txn-merchant" id="lbl-merchant">Merchant</label>
-            <input class="form-input" type="text" id="txn-merchant" placeholder="Merchant Name" required>
-          </div>
+        '<!-- Expense Specific: Breakdown Method Toggle -->' +
+        '<div id="expense-breakdown-container" class="form-group mt-md">' +
+        '<label class="form-label">Breakdown Method</label>' +
+        '<div class="flex gap-sm" style="width: 100%;">' +
+        '<button type="button" class="btn btn-outline btn-sm active" id="btn-method-simple" style="flex: 1; font-size: 0.75rem; height: 36px;">Simple Expense</button>' +
+        '<button type="button" class="btn btn-outline btn-sm" id="btn-method-itemized" style="flex: 1; font-size: 0.75rem; height: 36px;">Itemized Breakdown</button>' +
+        '</div>' +
+        '<input type="hidden" id="txn-method" value="simple">' +
+        '</div>' +
 
-          <div class="form-group mt-md" id="group-category">
-            <label class="form-label" for="txn-category">Category</label>
-            <select class="form-select" id="txn-category">
-              ${optionsHtml}
-            </select>
-          </div>
+        '<!-- Expense Specific: Itemized items list -->' +
+        '<div id="group-itemized-items" class="form-group mt-md hidden" style="background: var(--bg-secondary); padding: 12px; border-radius: var(--radius-md); border: 1px solid var(--border-light);">' +
+        '<label class="form-label" style="font-weight: bold; display: block; margin-bottom: 8px;">Line Items</label>' +
+        '<div id="itemized-rows-container" class="flex flex-column gap-sm"></div>' +
+        '<button type="button" class="btn btn-outline btn-xs mt-sm w-full" id="btn-add-item-row" style="font-size: 0.7rem; padding: 6px;"><i data-lucide="plus" style="width: 12px; height: 12px; display: inline-block; vertical-align: middle;"></i> Add Line Item</button>' +
+        '</div>' +
 
-          <div id="future-note-alert" class="card p-sm mt-sm mb-sm hidden" style="border-left: 4px solid var(--orange); background: var(--orange-light); color: var(--orange-dark); font-size: 0.8rem; border-radius: var(--radius-sm);">
-            <div class="flex gap-sm flex-center">
-              <i data-lucide="alert-triangle" style="width: 16px; height: 16px; flex-shrink: 0; color: var(--orange);"></i>
-              <div>
-                <strong>Future Self Alert:</strong>
-                <span id="future-note-text"></span>
-              </div>
-            </div>
-          </div>
+        '<!-- Expense Specific: Attach Receipt Simulator -->' +
+        '<div id="expense-receipt-container" class="form-group mt-md">' +
+        '<label class="form-label">Receipt Attachment</label>' +
+        '<div id="receipt-upload-box" class="card flex flex-column flex-center gap-xs clickable" style="border: 2px dashed var(--border); padding: 16px; border-radius: var(--radius-md); background: transparent; transition: all 0.2s; text-align: center;">' +
+        '<i data-lucide="camera" style="width: 24px; height: 24px; color: var(--text-secondary);"></i>' +
+        '<span class="text-xs text-secondary" id="receipt-status-text">Tap to upload receipt (Simulate AI Scan)</span>' +
+        '<div id="receipt-progress" class="progress-bar w-full hidden" style="height: 6px; background: var(--bg-secondary); margin-top: 8px;">' +
+        '<div id="receipt-progress-fill" class="progress-bar-fill" style="width: 0%; background: var(--primary);"></div>' +
+        '</div>' +
+        '</div>' +
+        '<input type="hidden" id="txn-receipt-url" value="">' +
+        '<!-- Receipt scanned preview thumbnail -->' +
+        '<div id="receipt-preview-thumbnail" class="card p-sm mt-sm hidden" style="background: var(--primary-light); border: 1px solid var(--primary); display: flex; align-items: center; justify-content: space-between; border-radius: var(--radius-md);">' +
+        '<div class="flex gap-sm flex-center">' +
+        '<i data-lucide="file-text" style="color: var(--primary); width: 20px; height: 20px;"></i>' +
+        '<div>' +
+        '<span class="text-xs font-bold text-primary-dark">Simulated Receipt Scanned!</span>' +
+        '<span class="text-xxs text-secondary block">AI successfully matched details.</span>' +
+        '</div>' +
+        '</div>' +
+        '<button type="button" class="btn btn-outline btn-xs text-negative" id="btn-remove-receipt" style="padding: 4px 8px;">Remove</button>' +
+        '</div>' +
+        '</div>' +
 
-          <div class="form-group mt-md" id="group-bucket">
-            <label class="form-label" for="txn-bucket">Deduct from Money Job Bucket (Optional)</label>
-            <select class="form-select" id="txn-bucket">
-              <option value="">-- No Bucket (General Wallet) --</option>
-              ${bucketsOptionsHtml}
-            </select>
-          </div>
+        '<!-- Income Specific: Unit Economics Fields -->' +
+        '<div id="group-unit-economics" class="hidden">' +
+        '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;" class="mt-md">' +
+        '<div class="form-group">' +
+        '<label class="form-label" for="txn-income-revenue">Gained from Product</label>' +
+        '<div style="position: relative;">' +
+        '<span style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-weight: 600; color: var(--text-primary);">' + SavvySpend.escapeHtml(currencySymbol) + '</span>' +
+        '<input class="form-input" type="number" step="0.01" id="txn-income-revenue" placeholder="0.00" style="padding-left: 28px;">' +
+        '</div>' +
+        '</div>' +
+        '<div class="form-group">' +
+        '<label class="form-label" for="txn-income-cost">Spent on Product</label>' +
+        '<div style="position: relative;">' +
+        '<span style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-weight: 600; color: var(--text-primary);">' + SavvySpend.escapeHtml(currencySymbol) + '</span>' +
+        '<input class="form-input" type="number" step="0.01" id="txn-income-cost" placeholder="0.00" style="padding-left: 28px;">' +
+        '</div>' +
+        '</div>' +
+        '</div>' +
+        '<!-- Live Profit Banner -->' +
+        '<div id="unit-economics-alert" class="card p-sm mt-sm bg-card" style="border-left: 4px solid var(--primary); font-size: 0.8rem; display: flex; align-items: center; justify-content: space-between; border-radius: var(--radius-sm);">' +
+        '<div class="flex gap-sm flex-center">' +
+        '<i data-lucide="trending-up" style="width: 16px; height: 16px; color: var(--primary);"></i>' +
+        '<div>' +
+        '<strong>Profit Margin Analysis:</strong>' +
+        '<span id="unit-economics-text" class="block text-secondary text-xxs mt-xxs">Enter revenue and cost details to view margins.</span>' +
+        '</div>' +
+        '</div>' +
+        '</div>' +
+        '</div>' +
 
-          <div class="form-group mt-md" id="group-rating">
-            <label class="form-label">Regret Tracker — How did this make you feel?</label>
-            <div class="flex gap-sm" style="width: 100%;">
-              <button type="button" class="btn btn-outline btn-sm rate-chip active" data-rating="worth_it" style="flex: 1; text-align: center; font-size: 0.75rem; height: 38px; padding-left: 0; padding-right: 0;">😊 Worth It</button>
-              <button type="button" class="btn btn-outline btn-sm rate-chip" data-rating="neutral" style="flex: 1; text-align: center; font-size: 0.75rem; height: 38px; padding-left: 0; padding-right: 0;">😐 Neutral</button>
-              <button type="button" class="btn btn-outline btn-sm rate-chip" data-rating="regret" style="flex: 1; text-align: center; font-size: 0.75rem; height: 38px; padding-left: 0; padding-right: 0;">😞 Regret</button>
-            </div>
-            <input type="hidden" id="txn-rating" value="worth_it">
-          </div>
+        '<div class="form-group mt-md" id="group-merchant">' +
+        '<label class="form-label" for="txn-merchant" id="lbl-merchant">Merchant</label>' +
+        '<input class="form-input" type="text" id="txn-merchant" placeholder="Merchant Name" required>' +
+        '</div>' +
 
-          <div class="form-group mt-md" id="group-income-source" style="display: none;">
-            <label class="form-label" for="txn-income-source">What was this money?</label>
-            <select class="form-select" id="txn-income-source">
-              <option value="Business">💼 Business Income</option>
-              <option value="Gift">🎁 Gift</option>
-              <option value="Salary">💰 Salary</option>
-              <option value="Side Hustle">🚀 Side Hustle</option>
-              <option value="Refund">🔄 Refund / Return</option>
-              <option value="Other">⭐ Other Income</option>
-            </select>
-          </div>
+        '<div class="form-group mt-md" id="group-category">' +
+        '<label class="form-label" for="txn-category">Category</label>' +
+        '<select class="form-select" id="txn-category">' +
+        optionsHtml +
+        '</select>' +
+        '</div>' +
 
-          <div class="form-group mt-md" id="group-invoice-link" style="display: none;">
-            <label class="form-label" for="txn-invoice-link">Link to Invoice (Optional)</label>
-            <select class="form-select" id="txn-invoice-link">
-              <option value="">-- No Linked Invoice --</option>
-              ${unpaidInvoicesOptionsHtml}
-            </select>
-          </div>
+        '<div id="future-note-alert" class="card p-sm mt-sm mb-sm hidden" style="border-left: 4px solid var(--orange); background: var(--orange-light); color: var(--orange-dark); font-size: 0.8rem; border-radius: var(--radius-sm);">' +
+        '<div class="flex gap-sm flex-center">' +
+        '<i data-lucide="alert-triangle" style="width: 16px; height: 16px; flex-shrink: 0; color: var(--orange);"></i>' +
+        '<div>' +
+        '<strong>Future Self Alert:</strong>' +
+        '<span id="future-note-text"></span>' +
+        '</div>' +
+        '</div>' +
+        '</div>' +
 
-          <div class="form-group mt-md" id="group-income-destination" style="display: none;">
-            <label class="form-label" for="txn-income-destination">Where did this money go?</label>
-            <select class="form-select" id="txn-income-destination">
-              <option value="wallet">💼 General Balance (Wallet for other purchases)</option>
-              ${goalsOptionsHtml}
-            </select>
-          </div>
+        '<div class="form-group mt-md" id="group-bucket">' +
+        '<label class="form-label" for="txn-bucket">Deduct from Money Job Bucket (Optional)</label>' +
+        '<select class="form-select" id="txn-bucket">' +
+        '<option value="">-- No Bucket (General Wallet) --</option>' +
+        bucketsOptionsHtml +
+        '</select>' +
+        '</div>' +
 
-          <div class="form-group mt-md">
-            <label class="form-label" for="txn-date">Date</label>
-            <input class="form-input" type="date" id="txn-date" value="${today}" required>
-          </div>
+        '<div class="form-group mt-md" id="group-rating">' +
+        '<label class="form-label">Regret Tracker — How did this make you feel?</label>' +
+        '<div class="flex gap-sm" style="width: 100%;">' +
+        '<button type="button" class="btn btn-outline btn-sm rate-chip active" data-rating="worth_it" style="flex: 1; text-align: center; font-size: 0.75rem; height: 38px; padding-left: 0; padding-right: 0;">😊 Worth It</button>' +
+        '<button type="button" class="btn btn-outline btn-sm rate-chip" data-rating="neutral" style="flex: 1; text-align: center; font-size: 0.75rem; height: 38px; padding-left: 0; padding-right: 0;">😐 Neutral</button>' +
+        '<button type="button" class="btn btn-outline btn-sm rate-chip" data-rating="regret" style="flex: 1; text-align: center; font-size: 0.75rem; height: 38px; padding-left: 0; padding-right: 0;">😞 Regret</button>' +
+        '</div>' +
+        '<input type="hidden" id="txn-rating" value="worth_it">' +
+        '</div>' +
 
-          <div class="form-group mt-md">
-            <label class="form-label" for="txn-paymethod">Payment Method</label>
-            <input class="form-input" type="text" id="txn-paymethod" placeholder="Payment Method (e.g. Mobile Money, Cash)">
-          </div>
+        '<div class="form-group mt-md" id="group-income-source" style="display: none;">' +
+        '<label class="form-label" for="txn-income-source">What was this money?</label>' +
+        '<select class="form-select" id="txn-income-source">' +
+        '<option value="Business">💼 Business Revenue / Product Sales</option>' +
+        '<option value="Gift">🎁 Gift / Allowance</option>' +
+        '<option value="Salary">💰 Salary</option>' +
+        '<option value="Side Hustle">🚀 Side Hustle</option>' +
+        '<option value="Refund">🔄 Refund / Return</option>' +
+        '<option value="Other">⭐ Other Income</option>' +
+        '</select>' +
+        '</div>' +
 
-          <div class="form-group mt-md">
-            <label class="form-label" for="txn-notes">Notes</label>
-            <textarea class="form-input" id="txn-notes" placeholder="Optional notes..." rows="2" style="resize: none;"></textarea>
-          </div>
+        '<div class="form-group mt-md" id="group-invoice-link" style="display: none;">' +
+        '<label class="form-label" for="txn-invoice-link">Link to Invoice (Optional)</label>' +
+        '<select class="form-select" id="txn-invoice-link">' +
+        '<option value="">-- No Linked Invoice --</option>' +
+        unpaidInvoicesOptionsHtml +
+        '</select>' +
+        '</div>' +
 
-          <div class="form-group mt-md">
-            <label class="form-label" for="txn-tags">Tags (comma separated)</label>
-            <input class="form-input" type="text" id="txn-tags" placeholder="Tags (comma separated)">
-          </div>
+        '<div class="form-group mt-md" id="group-income-destination" style="display: none;">' +
+        '<label class="form-label" for="txn-income-destination">Where did this money go?</label>' +
+        '<select class="form-select" id="txn-income-destination">' +
+        '<option value="wallet">💼 General Balance (Wallet for other purchases)</option>' +
+        goalsOptionsHtml +
+        '</select>' +
+        '</div>' +
 
-          <div class="modal-footer mt-lg flex gap-md">
-            <button type="button" class="btn btn-outline w-full" onclick="SavvySpend.closeModal()">Cancel</button>
-            <button type="submit" class="btn btn-primary w-full">Save Transaction</button>
-          </div>
-        </form>
-      `;
+        '<div class="form-group mt-md">' +
+        '<label class="form-label" for="txn-date">Date</label>' +
+        '<input class="form-input" type="date" id="txn-date" value="' + today + '" required>' +
+        '</div>' +
+
+        '<!-- Redesigned Payment Account Select -->' +
+        '<div class="form-group mt-md">' +
+        '<label class="form-label" for="txn-paymethod">Payment Account</label>' +
+        '<select class="form-select" id="txn-paymethod">' +
+        '<option value="Cash Wallet">💵 Cash Wallet</option>' +
+        '<option value="MTN Mobile Money">📱 MTN Mobile Money (MoMo)</option>' +
+        '<option value="Telecel Cash">📱 Telecel Cash</option>' +
+        '<option value="AT Money">📱 AT Money</option>' +
+        '<option value="GCB Bank Account">🏦 GCB Bank Account</option>' +
+        '<option value="EcoBank Account">🏦 EcoBank Account</option>' +
+        '<option value="Debit/Credit Card">💳 Debit/Credit Card</option>' +
+        '</select>' +
+        '</div>' +
+
+        '<!-- Transaction Status -->' +
+        '<div class="form-group mt-md" id="group-status">' +
+        '<label class="form-label" for="txn-status">Transaction Status</label>' +
+        '<select class="form-select" id="txn-status">' +
+        '<option value="completed">✅ Completed</option>' +
+        '<option value="pending">⏳ Pending</option>' +
+        '<option value="scheduled">📅 Scheduled</option>' +
+        '</select>' +
+        '</div>' +
+
+        '<!-- Expense Specific: Recurring Toggle -->' +
+        '<div class="form-group mt-md flex flex-between flex-center" id="group-recurring" style="display: flex; align-items: center; justify-content: space-between; background: var(--bg-secondary); padding: 8px 12px; border-radius: var(--radius-md); border: 1px solid var(--border-light);">' +
+        '<label class="form-label" for="txn-is-recurring" style="margin-bottom: 0; font-weight: 700; color: var(--text-primary);">🔁 Recurring Expense?</label>' +
+        '<label class="toggle-switch">' +
+        '<input type="checkbox" id="txn-is-recurring" class="toggle-input">' +
+        '<span class="toggle-slider"></span>' +
+        '</label>' +
+        '</div>' +
+        
+        '<!-- Recurrence Interval -->' +
+        '<div class="form-group mt-md hidden" id="group-recurrence-interval">' +
+        '<label class="form-label" for="txn-recurrence-interval">Recurrence Interval</label>' +
+        '<select class="form-select" id="txn-recurrence-interval">' +
+        '<option value="daily">Daily</option>' +
+        '<option value="weekly">Weekly</option>' +
+        '<option value="monthly" selected>Monthly</option>' +
+        '<option value="yearly">Yearly</option>' +
+        '</select>' +
+        '</div>' +
+
+        '<div class="form-group mt-md">' +
+        '<label class="form-label" for="txn-notes">Notes</label>' +
+        '<textarea class="form-input" id="txn-notes" placeholder="Optional notes..." rows="2" style="resize: none;"></textarea>' +
+        '</div>' +
+
+        '<div class="form-group mt-md">' +
+        '<label class="form-label" for="txn-tags">Tags (comma separated)</label>' +
+        '<input class="form-input" type="text" id="txn-tags" placeholder="Tags (comma separated)">' +
+        '</div>' +
+
+        '<div class="modal-footer mt-lg flex gap-md">' +
+        '<button type="button" class="btn btn-outline w-full" onclick="SavvySpend.closeModal()">Cancel</button>' +
+        '<button type="submit" class="btn btn-primary w-full">Save Transaction</button>' +
+        '</div>' +
+        '</form>';
 
       SavvySpend.showModal(html);
 
-      // Bind dynamic toggle logic
+      // Bind basic toggle elements
       var btnExpense = document.getElementById('btn-expense');
       var btnIncome = document.getElementById('btn-income');
       var txnType = document.getElementById('txn-type');
       var groupCategory = document.getElementById('group-category');
       var groupBucket = document.getElementById('group-bucket');
       var groupRating = document.getElementById('group-rating');
+      var groupMerchant = document.getElementById('group-merchant');
+      var groupAmount = document.getElementById('group-amount');
+      var groupStatus = document.getElementById('group-status');
+      var groupRecurring = document.getElementById('group-recurring');
+      var groupRecurrenceInterval = document.getElementById('group-recurrence-interval');
+      
       var groupIncomeSource = document.getElementById('group-income-source');
       var groupInvoiceLink = document.getElementById('group-invoice-link');
       var groupIncomeDestination = document.getElementById('group-income-destination');
@@ -181,44 +296,271 @@
       var chkBusiness = document.getElementById('txn-is-business');
       var selIncomeSource = document.getElementById('txn-income-source');
 
+      // Expense-specific containers
+      var expenseBreakdown = document.getElementById('expense-breakdown-container');
+      var groupItemized = document.getElementById('group-itemized-items');
+      var expenseReceipt = document.getElementById('expense-receipt-container');
+      var btnMethodSimple = document.getElementById('btn-method-simple');
+      var btnMethodItemized = document.getElementById('btn-method-itemized');
+      var txnMethod = document.getElementById('txn-method');
+      var itemRowsContainer = document.getElementById('itemized-rows-container');
+
+      // Income-specific containers
+      var groupUnitEconomics = document.getElementById('group-unit-economics');
+      var revInput = document.getElementById('txn-income-revenue');
+      var costInput = document.getElementById('txn-income-cost');
+      var helperAlert = document.getElementById('unit-economics-alert');
+      var helperText = document.getElementById('unit-economics-text');
+
+      // Functions to switch styles & layouts
+      function updateVisibilityForExpense() {
+        groupCategory.style.display = 'block';
+        groupBucket.style.display = 'block';
+        groupRating.style.display = 'block';
+        groupMerchant.style.display = 'block';
+        expenseBreakdown.style.display = 'block';
+        expenseReceipt.style.display = 'block';
+        groupRecurring.style.display = 'flex';
+        
+        groupIncomeSource.style.display = 'none';
+        groupInvoiceLink.style.display = 'none';
+        groupIncomeDestination.style.display = 'none';
+        groupUnitEconomics.classList.add('hidden');
+
+        lblMerchant.textContent = 'Merchant';
+        txtMerchant.placeholder = 'Merchant Name';
+        txtMerchant.required = true;
+        
+        var isItemized = txnMethod.value === 'itemized';
+        if (isItemized) {
+          groupItemized.classList.remove('hidden');
+          document.getElementById('txn-amount').readOnly = true;
+          document.getElementById('txn-amount').required = false;
+        } else {
+          groupItemized.classList.add('hidden');
+          document.getElementById('txn-amount').readOnly = false;
+          document.getElementById('txn-amount').required = true;
+        }
+        
+        var isRec = document.getElementById('txn-is-recurring').checked;
+        if (isRec) {
+          groupRecurrenceInterval.classList.remove('hidden');
+        } else {
+          groupRecurrenceInterval.classList.add('hidden');
+        }
+        updateFutureNote();
+      }
+
+      function updateVisibilityForIncome() {
+        groupCategory.style.display = 'none';
+        groupBucket.style.display = 'none';
+        groupRating.style.display = 'none';
+        document.getElementById('future-note-alert').classList.add('hidden');
+        expenseBreakdown.style.display = 'none';
+        groupItemized.classList.add('hidden');
+        expenseReceipt.style.display = 'none';
+        groupRecurring.style.display = 'none';
+        groupRecurrenceInterval.classList.add('hidden');
+        
+        groupIncomeSource.style.display = 'block';
+        groupInvoiceLink.style.display = 'block';
+        groupIncomeDestination.style.display = 'block';
+
+        lblMerchant.textContent = 'Income Source / Details';
+        txtMerchant.placeholder = 'e.g. Gift from Nana, Business Payment';
+        txtMerchant.required = false;
+
+        // Auto check business if source is business
+        chkBusiness.checked = (selIncomeSource.value === 'Business');
+        
+        if (selIncomeSource.value === 'Business') {
+          groupUnitEconomics.classList.remove('hidden');
+          groupAmount.style.display = 'block';
+          document.getElementById('txn-amount').readOnly = true;
+          document.getElementById('txn-amount').required = false;
+          updateUnitEconomics();
+        } else {
+          groupUnitEconomics.classList.add('hidden');
+          groupAmount.style.display = 'block';
+          document.getElementById('txn-amount').readOnly = false;
+          document.getElementById('txn-amount').required = true;
+        }
+      }
+
       btnExpense.addEventListener('click', function () {
         btnExpense.classList.add('active');
         btnIncome.classList.remove('active');
         txnType.value = 'expense';
-        groupCategory.style.display = 'block';
-        groupBucket.style.display = 'block';
-        groupRating.style.display = 'block';
-        groupIncomeSource.style.display = 'none';
-        groupInvoiceLink.style.display = 'none';
-        groupIncomeDestination.style.display = 'none';
-        lblMerchant.textContent = 'Merchant';
-        txtMerchant.placeholder = 'Merchant Name';
-        txtMerchant.required = true;
-        updateFutureNote();
+        updateVisibilityForExpense();
       });
 
       btnIncome.addEventListener('click', function () {
         btnIncome.classList.add('active');
         btnExpense.classList.remove('active');
         txnType.value = 'income';
-        groupCategory.style.display = 'none';
-        groupBucket.style.display = 'none';
-        groupRating.style.display = 'none';
-        document.getElementById('future-note-alert').classList.add('hidden');
-        groupIncomeSource.style.display = 'block';
-        groupInvoiceLink.style.display = 'block';
-        groupIncomeDestination.style.display = 'block';
-        lblMerchant.textContent = 'Income Source / Details';
-        txtMerchant.placeholder = 'e.g. Gift from Nana, Business Payment';
-        txtMerchant.required = false;
-        
-        // Auto check business if source is business
-        chkBusiness.checked = (selIncomeSource.value === 'Business');
+        updateVisibilityForIncome();
       });
 
       selIncomeSource.addEventListener('change', function () {
         if (selIncomeSource.value === 'Business') {
           chkBusiness.checked = true;
+        }
+        updateVisibilityForIncome();
+      });
+
+      // Itemized logic
+      function createItemRow(desc, qty, rate) {
+        var row = document.createElement('div');
+        row.className = 'itemized-row flex gap-xs flex-center mb-xs';
+        row.style.display = 'flex';
+        row.style.gap = '8px';
+        row.style.alignItems = 'center';
+        
+        row.innerHTML = '<input class="form-input row-desc" type="text" placeholder="Item desc" required style="flex: 2; height: 32px; font-size: 0.8rem; padding: 4px 8px;">' +
+          '<input class="form-input row-qty" type="number" min="1" step="1" placeholder="Qty" required style="width: 50px; height: 32px; font-size: 0.8rem; padding: 4px 8px; text-align: center;">' +
+          '<input class="form-input row-rate" type="number" min="0" step="0.01" placeholder="Rate" required style="width: 80px; height: 32px; font-size: 0.8rem; padding: 4px 8px; text-align: right;">' +
+          '<button type="button" class="btn-remove-item btn-icon text-negative" style="background: transparent; border: none; padding: 0 4px; cursor: pointer;"><i data-lucide="trash-2" style="width: 14px; height: 14px;"></i></button>';
+        
+        row.querySelector('.row-desc').value = desc || '';
+        row.querySelector('.row-qty').value = qty || 1;
+        row.querySelector('.row-rate').value = rate || 0;
+        
+        row.querySelector('.btn-remove-item').addEventListener('click', function () {
+          row.remove();
+          recalculateItemizedTotal();
+        });
+        
+        row.querySelector('.row-qty').addEventListener('input', recalculateItemizedTotal);
+        row.querySelector('.row-rate').addEventListener('input', recalculateItemizedTotal);
+        
+        itemRowsContainer.appendChild(row);
+        if (window.lucide) lucide.createIcons();
+      }
+
+      function recalculateItemizedTotal() {
+        var total = 0;
+        var rows = itemRowsContainer.querySelectorAll('.itemized-row');
+        rows.forEach(function (r) {
+          var qty = parseFloat(r.querySelector('.row-qty').value) || 0;
+          var rate = parseFloat(r.querySelector('.row-rate').value) || 0;
+          total += qty * rate;
+        });
+        document.getElementById('txn-amount').value = total > 0 ? total.toFixed(2) : '';
+      }
+
+      document.getElementById('btn-add-item-row').addEventListener('click', function () {
+        createItemRow('', 1, 0);
+      });
+
+      btnMethodSimple.addEventListener('click', function () {
+        btnMethodSimple.classList.add('active');
+        btnMethodItemized.classList.remove('active');
+        txnMethod.value = 'simple';
+        updateVisibilityForExpense();
+      });
+
+      btnMethodItemized.addEventListener('click', function () {
+        btnMethodItemized.classList.add('active');
+        btnMethodSimple.classList.remove('active');
+        txnMethod.value = 'itemized';
+        
+        if (itemRowsContainer.querySelectorAll('.itemized-row').length === 0) {
+          createItemRow('', 1, 0);
+        }
+        updateVisibilityForExpense();
+        recalculateItemizedTotal();
+      });
+
+      // Receipt Simulation
+      var uploadBox = document.getElementById('receipt-upload-box');
+      var progress = document.getElementById('receipt-progress');
+      var progressFill = document.getElementById('receipt-progress-fill');
+      var statusText = document.getElementById('receipt-status-text');
+      var valReceiptUrl = document.getElementById('txn-receipt-url');
+      var thumb = document.getElementById('receipt-preview-thumbnail');
+
+      uploadBox.addEventListener('click', function () {
+        if (valReceiptUrl.value) return;
+        progress.classList.remove('hidden');
+        statusText.textContent = 'Uploading Receipt Image...';
+        
+        var pct = 0;
+        var interval = setInterval(function () {
+          pct += 25;
+          progressFill.style.width = pct + '%';
+          if (pct === 50) {
+            statusText.textContent = 'Smart AI OCR Matching details...';
+          }
+          if (pct >= 100) {
+            clearInterval(interval);
+            progress.classList.add('hidden');
+            statusText.textContent = 'Simulated Receipt Scanned!';
+            valReceiptUrl.value = 'mock_receipt_image.png';
+            uploadBox.style.display = 'none';
+            thumb.classList.remove('hidden');
+            
+            document.getElementById('txn-merchant').value = 'MaxMart Supermarket';
+            document.getElementById('txn-paymethod').value = 'Debit/Credit Card';
+            document.getElementById('txn-category').value = 'groceries';
+            
+            if (txnMethod.value === 'simple') {
+              document.getElementById('txn-amount').value = '154.50';
+            } else {
+              itemRowsContainer.innerHTML = '';
+              createItemRow('Fresh Milk (1L)', 2, 18.50);
+              createItemRow('Whole Wheat Bread', 1, 15.00);
+              createItemRow('Imported Cheddar Cheese', 1, 62.50);
+              createItemRow('Detergent Powder (2kg)', 1, 40.00);
+              recalculateItemizedTotal();
+            }
+            SavvySpend.showToast('AI Scan complete! MaxMart details filled in.', 'success');
+          }
+        }, 200);
+      });
+
+      document.getElementById('btn-remove-receipt').addEventListener('click', function (e) {
+        e.stopPropagation();
+        valReceiptUrl.value = '';
+        thumb.classList.add('hidden');
+        uploadBox.style.display = 'flex';
+        statusText.textContent = 'Tap to upload receipt (Simulate AI Scan)';
+        progressFill.style.width = '0%';
+      });
+
+      // Unit Economics
+      function updateUnitEconomics() {
+        var rev = parseFloat(revInput.value) || 0;
+        var cost = parseFloat(costInput.value) || 0;
+        var profit = rev - cost;
+        var margin = rev > 0 ? Math.round((profit / rev) * 100) : 0;
+        
+        if (rev === 0 && cost === 0) {
+          helperText.textContent = 'Enter revenue and cost details to view margins.';
+          helperAlert.style.borderLeftColor = 'var(--border)';
+          return;
+        }
+        
+        var marginColor = profit >= 0 ? 'var(--primary)' : 'var(--red)';
+        helperAlert.style.borderLeftColor = marginColor;
+        
+        if (profit >= 0) {
+          helperText.innerHTML = '<span style="color: var(--primary-dark); font-weight: bold;">GH₵ ' + profit.toFixed(2) + ' Net Profit</span> • ' + margin + '% profit margin';
+        } else {
+          helperText.innerHTML = '<span style="color: var(--red); font-weight: bold;">GH₵ ' + Math.abs(profit).toFixed(2) + ' Net Loss</span> • ' + margin + '% margin';
+        }
+        
+        document.getElementById('txn-amount').value = profit.toFixed(2);
+      }
+      
+      revInput.addEventListener('input', updateUnitEconomics);
+      costInput.addEventListener('input', updateUnitEconomics);
+
+      // Recurring settings
+      document.getElementById('txn-is-recurring').addEventListener('change', function (e) {
+        if (e.target.checked) {
+          groupRecurrenceInterval.classList.remove('hidden');
+        } else {
+          groupRecurrenceInterval.classList.add('hidden');
         }
       });
 
@@ -256,30 +598,80 @@
         });
       });
 
-      // Handle submit
+      // Form submit handler
       document.getElementById('txn-form').addEventListener('submit', function (e) {
         e.preventDefault();
         
-        var rawAmount = parseFloat(document.getElementById('txn-amount').value);
-        if (isNaN(rawAmount) || rawAmount <= 0) {
-          alert('Please enter a valid amount.');
-          return;
-        }
-
         var type = txnType.value;
-        var finalAmount = type === 'expense' ? -rawAmount : rawAmount;
-        var category = type === 'expense' ? document.getElementById('txn-category').value : 'income';
-        var merchant = txtMerchant.value.trim();
-        var date = document.getElementById('txn-date').value;
-        var payMethod = document.getElementById('txn-paymethod').value.trim() || 'Cash';
+        var finalAmount = 0;
+        var productRevenue = null;
+        var productCost = null;
+        var isItemized = false;
+        var items = [];
+        
+        var payMethod = document.getElementById('txn-paymethod').value;
+        var status = document.getElementById('txn-status').value;
+        var isRecurring = document.getElementById('txn-is-recurring').checked;
+        var recurrenceInterval = isRecurring ? document.getElementById('txn-recurrence-interval').value : null;
+        var hasReceipt = !!valReceiptUrl.value;
         var notes = document.getElementById('txn-notes').value.trim();
         var tagsRaw = document.getElementById('txn-tags').value;
         var tags = tagsRaw ? tagsRaw.split(',').map(function (t) { return t.trim(); }).filter(Boolean) : [];
-
+        
         var bucketId = type === 'expense' ? (document.getElementById('txn-bucket').value || null) : null;
         var rating = type === 'expense' ? document.getElementById('txn-rating').value : null;
         var isBusiness = chkBusiness.checked;
         var invoiceId = (type === 'income' && document.getElementById('txn-invoice-link')) ? document.getElementById('txn-invoice-link').value : null;
+        var merchant = txtMerchant.value.trim();
+        var date = document.getElementById('txn-date').value;
+        var category = type === 'expense' ? document.getElementById('txn-category').value : 'income';
+
+        if (type === 'expense') {
+          var method = txnMethod.value;
+          if (method === 'itemized') {
+            isItemized = true;
+            var rows = itemRowsContainer.querySelectorAll('.itemized-row');
+            if (rows.length === 0) {
+              alert('Please add at least one line item.');
+              return;
+            }
+            rows.forEach(function (r) {
+              var desc = r.querySelector('.row-desc').value.trim();
+              var qty = parseInt(r.querySelector('.row-qty').value, 10) || 1;
+              var rate = parseFloat(r.querySelector('.row-rate').value) || 0;
+              items.push({ description: desc, quantity: qty, rate: rate });
+            });
+            var total = items.reduce(function (sum, it) { return sum + it.quantity * it.rate; }, 0);
+            finalAmount = -total;
+          } else {
+            var rawAmount = parseFloat(document.getElementById('txn-amount').value);
+            if (isNaN(rawAmount) || rawAmount <= 0) {
+              alert('Please enter a valid amount.');
+              return;
+            }
+            finalAmount = -rawAmount;
+          }
+        } else { // income
+          var source = selIncomeSource.value;
+          if (source === 'Business') {
+            var rev = parseFloat(revInput.value) || 0;
+            var cost = parseFloat(costInput.value) || 0;
+            if (rev <= 0) {
+              alert('Please enter a valid product sales revenue.');
+              return;
+            }
+            productRevenue = rev;
+            productCost = cost;
+            finalAmount = rev - cost; // Net Profit
+          } else {
+            var rawAmount = parseFloat(document.getElementById('txn-amount').value);
+            if (isNaN(rawAmount) || rawAmount <= 0) {
+              alert('Please enter a valid amount.');
+              return;
+            }
+            finalAmount = rawAmount;
+          }
+        }
 
         var t = {
           id: 'tx_' + SavvySpend.generateId(),
@@ -290,14 +682,24 @@
           time: new Date().toTimeString().slice(0, 5),
           paymentMethod: payMethod,
           paymentLast4: Math.floor(1000 + Math.random() * 9000).toString(),
-          status: 'completed',
+          status: status,
           notes: notes,
           tags: tags,
           currency: DataStore.getSettings().currency || 'GHS',
           bucketId: bucketId,
           rating: rating,
           isBusiness: isBusiness,
-          invoiceId: invoiceId || undefined
+          invoiceId: invoiceId || undefined,
+          
+          // New premium fields
+          isItemized: isItemized,
+          items: items,
+          hasReceipt: hasReceipt,
+          receiptUrl: valReceiptUrl.value || null,
+          isRecurring: isRecurring,
+          recurrenceInterval: recurrenceInterval,
+          productRevenue: productRevenue,
+          productCost: productCost
         };
 
         if (isBusiness && !t.tags.includes('business')) {
@@ -308,7 +710,7 @@
         var isGoalDeposit = false;
 
         if (type === 'income') {
-          var incomeSource = document.getElementById('txn-income-source').value;
+          var incomeSource = selIncomeSource.value;
           var incomeDest = document.getElementById('txn-income-destination').value;
           
           if (!t.merchant) {
@@ -327,7 +729,7 @@
             if (goal) {
               var contribution = {
                 id: 'c_' + SavvySpend.generateId(),
-                amount: rawAmount,
+                amount: Math.max(0, finalAmount),
                 date: date || new Date().toISOString().split('T')[0],
                 type: 'manual',
                 source: t.merchant
@@ -336,15 +738,15 @@
 
               var outTx = {
                 id: 'tx_' + SavvySpend.generateId(),
-                amount: -rawAmount,
-                merchant: `Save: ${goal.name}`,
+                amount: -Math.max(0, finalAmount),
+                merchant: 'Save: ' + goal.name,
                 category: 'other',
                 date: date || new Date().toISOString().split('T')[0],
                 time: new Date().toTimeString().slice(0, 5),
                 paymentMethod: payMethod,
                 paymentLast4: Math.floor(1000 + Math.random() * 9000).toString(),
                 status: 'completed',
-                notes: `Transfer from Income: ${t.merchant}`,
+                notes: 'Transfer from Income: ' + t.merchant,
                 tags: ['savings'],
                 currency: DataStore.getSettings().currency || 'GHS',
                 bucketId: null,
@@ -352,7 +754,7 @@
               };
               DataStore.addTransaction(outTx);
 
-              t.notes = (notes ? notes + '\n' : '') + `Directed to Savings Goal: ${goal.name}`;
+              t.notes = (notes ? notes + '\n' : '') + 'Directed to Savings Goal: ' + goal.name;
               if (!t.tags.includes('savings')) {
                 t.tags.push('savings');
               }
@@ -378,7 +780,7 @@
           var budgets = DataStore.getBudgets();
           var budget = budgets.find(function (b) { return b.category === category; });
           if (budget) {
-            budget.spent += rawAmount;
+            budget.spent += Math.abs(finalAmount);
             DataStore.updateBudget(budget.id, { spent: budget.spent });
           }
         }
@@ -392,17 +794,15 @@
         }
         
         if (xpRes.leveled) {
-          SavvySpend.showToast(`Level Up! You reached Level ${xpRes.newLevel}!`, 'success');
+          SavvySpend.showToast('Level Up! You reached Level ' + xpRes.newLevel + '!', 'success');
         } else {
-          SavvySpend.showToast(`${successMessage} +${xpAmount} XP`, 'success');
+          SavvySpend.showToast(successMessage + ' +' + xpAmount + ' XP', 'success');
         }
 
-        // Check budget thresholds
         if (window.SavvySpend.components.Notifications) {
           window.SavvySpend.components.Notifications.checkBudgetAlerts();
         }
 
-        // Re-route/render page
         SavvySpend.handleRoute();
       });
     },

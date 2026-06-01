@@ -71,10 +71,8 @@
 
       var businessBannerHtml = '';
       if (settings.businessModeEnabled) {
-        var businessTxns = txns.filter(function (t) { return t.isBusiness; });
-        var bizRev = businessTxns.filter(function (t) { return t.amount > 0; }).reduce(function (sum, t) { return sum + t.amount; }, 0);
-        var bizExp = businessTxns.filter(function (t) { return t.amount < 0; }).reduce(function (sum, t) { return sum + Math.abs(t.amount); }, 0);
-        var bizProfit = bizRev - bizExp;
+        var plStats = DataStore.getBusinessPL();
+        var bizProfit = plStats.netProfit;
         
         businessBannerHtml = `
           <!-- Business P&L Dashboard Quick Banner -->

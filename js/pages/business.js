@@ -19,17 +19,11 @@
 
       // 1. Math for Overview (P&L)
       var businessTxns = txns.filter(function (t) { return t.isBusiness; });
-      
-      var bizRevenue = businessTxns
-        .filter(function (t) { return t.amount > 0; })
-        .reduce(function (sum, t) { return sum + t.amount; }, 0);
-        
-      var bizExpenses = businessTxns
-        .filter(function (t) { return t.amount < 0; })
-        .reduce(function (sum, t) { return sum + Math.abs(t.amount); }, 0);
-
-      var netProfit = bizRevenue - bizExpenses;
-      var operatingMargin = bizRevenue > 0 ? Math.round((netProfit / bizRevenue) * 100) : 0;
+      var plStats = DataStore.getBusinessPL();
+      var bizRevenue = plStats.revenue;
+      var bizExpenses = plStats.expenses;
+      var netProfit = plStats.netProfit;
+      var operatingMargin = plStats.operatingMargin;
 
       // 2. Math for Invoices
       var totalInvoiced = invoices.reduce(function (sum, inv) { return sum + inv.amount; }, 0);

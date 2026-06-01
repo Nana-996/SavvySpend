@@ -73,6 +73,13 @@
     { id: 'health',        name: 'Health',           icon: 'activity', color: '#EF4444', isCustom: false },
     { id: 'education',     name: 'Education',        icon: 'graduation-cap', color: '#06B6D4', isCustom: false },
     { id: 'groceries',     name: 'Groceries',        icon: 'shopping-cart', color: '#059669', isCustom: false },
+    { id: 'inventory',     name: 'Inventory & Stock',icon: 'boxes', color: '#F59E0B', isCustom: false },
+    { id: 'marketing',     name: 'Marketing & Ads',  icon: 'megaphone', color: '#3B82F6', isCustom: false },
+    { id: 'software',      name: 'Software & SaaS',  icon: 'cpu', color: '#7C3AED', isCustom: false },
+    { id: 'office',        name: 'Office & Co-work', icon: 'building', color: '#6B7280', isCustom: false },
+    { id: 'personal_care', name: 'Personal Care',    icon: 'smile', color: '#EC4899', isCustom: false },
+    { id: 'gifts_donations',name: 'Gifts & Charity',  icon: 'heart', color: '#EF4444', isCustom: false },
+    { id: 'travel',        name: 'Travel & Trips',   icon: 'plane', color: '#06B6D4', isCustom: false },
     { id: 'income',        name: 'Income',           icon: 'arrow-down-left', color: '#10B981', isCustom: false },
     { id: 'other',         name: 'Other',            icon: 'package', color: '#9CA3AF', isCustom: false }
   ];
@@ -87,6 +94,13 @@
     health:        { name: 'Health',           icon: 'activity', color: '#EF4444' },
     education:     { name: 'Education',        icon: 'graduation-cap', color: '#06B6D4' },
     groceries:     { name: 'Groceries',        icon: 'shopping-cart', color: '#059669' },
+    inventory:     { name: 'Inventory & Stock',icon: 'boxes', color: '#F59E0B' },
+    marketing:     { name: 'Marketing & Ads',  icon: 'megaphone', color: '#3B82F6' },
+    software:      { name: 'Software & SaaS',  icon: 'cpu', color: '#7C3AED' },
+    office:        { name: 'Office & Co-work', icon: 'building', color: '#6B7280' },
+    personal_care: { name: 'Personal Care',    icon: 'smile', color: '#EC4899' },
+    gifts_donations:{ name: 'Gifts & Charity',  icon: 'heart', color: '#EF4444' },
+    travel:        { name: 'Travel & Trips',   icon: 'plane', color: '#06B6D4' },
     income:        { name: 'Income',           icon: 'arrow-down-left', color: '#10B981' },
     other:         { name: 'Other',            icon: 'package', color: '#9CA3AF' }
   };
@@ -493,6 +507,40 @@
       var list = _read(KEYS.transactions) || [];
       list = list.filter(function (t) { return t.id !== id; });
       _write(KEYS.transactions, list);
+    },
+
+    getBusinessPL: function () {
+      var txns = this.getTransactions() || [];
+      var businessTxns = txns.filter(function (t) { return t.isBusiness; });
+      
+      var bizRevenue = businessTxns
+        .reduce(function (sum, t) {
+          if (t.productRevenue !== undefined && t.productRevenue !== null) {
+            return sum + t.productRevenue;
+          }
+          return sum + (t.amount > 0 ? t.amount : 0);
+        }, 0);
+        
+      var bizExpenses = businessTxns
+        .reduce(function (sum, t) {
+          var cost = 0;
+          if (t.productCost !== undefined && t.productCost !== null) {
+            cost += t.productCost;
+          }
+          if (t.amount < 0) {
+            cost += Math.abs(t.amount);
+          }
+          return sum + cost;
+        }, 0);
+
+      var netProfit = bizRevenue - bizExpenses;
+      var operatingMargin = bizRevenue > 0 ? Math.round((netProfit / bizRevenue) * 100) : 0;
+      return {
+        revenue: bizRevenue,
+        expenses: bizExpenses,
+        netProfit: netProfit,
+        operatingMargin: operatingMargin
+      };
     },
 
     // ── Budgets ──────────────────────────────────────────────
