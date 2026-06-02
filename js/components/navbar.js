@@ -38,12 +38,17 @@
     init: function (container) {
       if (!container) return;
       
-      // Bind click handlers to navigate
+      // Bind click handlers with haptic-like feedback
       container.addEventListener('click', function (e) {
         var item = e.target.closest('.navbar-item');
         if (item) {
           var route = item.getAttribute('data-route');
           if (route) {
+            // Add tap animation
+            item.classList.add('navbar-tap');
+            setTimeout(function () {
+              item.classList.remove('navbar-tap');
+            }, 200);
             SavvySpend.navigate('#/' + route);
           }
         }
@@ -56,8 +61,17 @@
         var route = item.getAttribute('data-route');
         if (route === routeName) {
           item.classList.add('active');
+          // Animate the active indicator dot
+          var dot = item.querySelector('.navbar-dot');
+          if (!dot) {
+            dot = document.createElement('span');
+            dot.className = 'navbar-dot';
+            item.appendChild(dot);
+          }
         } else {
           item.classList.remove('active');
+          var dot = item.querySelector('.navbar-dot');
+          if (dot) dot.remove();
         }
       });
     }

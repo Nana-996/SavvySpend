@@ -44,9 +44,9 @@
         // Empty state onboarding card
         weeklyTabHtml = `
           <div class="text-center py-xl bg-card card" style="border: 1px dashed var(--border); margin-top: 16px;">
-            <div class="flex flex-center" style="width: 64px; height: 64px; border-radius: 50%; background: var(--primary-light); color: var(--primary-dark); margin: 0 auto 16px;">
+            <span class="empty-state-icon"><div class="flex flex-center" style="width: 64px; height: 64px; border-radius: 50%; background: var(--primary-light); color: var(--primary-dark); margin: 0 auto 16px;">
               <i data-lucide="wallet" style="width: 32px; height: 32px;"></i>
-            </div>
+            </div></span>
             <h4 class="text-base font-bold text-primary-text">No weekly budget set</h4>
             <p class="text-xs text-secondary mt-xs px-lg" style="line-height: 1.4;">
               Set your weekly spending money, and the app will calculate your proposed daily allowance. At the end of the week, your balance is recorded.
@@ -223,7 +223,7 @@
             </div>
 
             <div class="progress-bar w-full" style="height: 10px; background: var(--bg-secondary); border-radius: var(--radius-full); overflow: hidden; margin-top: 8px;">
-              <div class="progress-bar-fill" style="width: ${Math.min(weeklyPct, 100)}%; background: ${weeklyPct >= 100 ? 'var(--red)' : weeklyPct >= 80 ? 'var(--orange)' : 'var(--primary)'}; height: 100%; border-radius: var(--radius-full);"></div>
+              <div class="progress-bar-fill-animated" data-target-width="${Math.min(weeklyPct, 100)}%" style="background: ${weeklyPct >= 100 ? 'var(--red)' : weeklyPct >= 80 ? 'var(--orange)' : 'var(--primary)'}; height: 100%; border-radius: var(--radius-full);"></div>
             </div>
             
             <div class="flex flex-between text-xxs text-secondary mt-sm" style="margin-top: 8px;">
@@ -323,9 +323,10 @@
       if (jobs.length === 0) {
         jobsHtml = `
           <div class="text-center py-xl bg-card card" style="border: 1px dashed var(--border);">
-            <i data-lucide="piggy-bank" style="width: 48px; height: 48px; stroke: var(--text-tertiary); margin: 0 auto 12px;"></i>
+            <span class="empty-state-icon"><i data-lucide="piggy-bank" style="width: 48px; height: 48px; stroke: var(--text-tertiary); margin: 0 auto 12px;"></i></span>
             <h4 class="text-base font-bold text-primary-text">No Money Jobs set</h4>
             <p class="text-xs text-secondary mt-xs px-lg" style="line-height: 1.4;">Give every cedi a purpose! Allocate your wallet balance into specific funding buckets.</p>
+            <div class="empty-state-dots mt-md"><span></span><span></span><span></span></div>
             <button class="btn btn-primary btn-sm mt-md" id="btn-add-job-empty">Create Bucket</button>
           </div>
         `;
@@ -364,7 +365,7 @@
                 </div>
               </div>
               <div class="progress-bar w-full" style="height: 8px; background: var(--bg-secondary); border-radius: var(--radius-full); overflow: hidden;">
-                <div class="progress-bar-fill" style="width: ${fillPct}%; background: ${barColor}; height: 100%; border-radius: var(--radius-full);"></div>
+                <div class="progress-bar-fill-animated" data-target-width="${fillPct}%" style="background: ${barColor}; height: 100%; border-radius: var(--radius-full);"></div>
               </div>
             </div>
           `;
@@ -373,8 +374,8 @@
 
       return `
         <div class="page-header mt-sm mb-lg">
-          <h2 class="page-title text-2xl font-bold">Budgets</h2>
-          <p class="page-subtitle text-xs text-secondary">Control your spending & allocate your cash</p>
+          <h2 class="page-title text-2xl font-bold hero-title">Budgets</h2>
+          <p class="page-subtitle text-xs text-secondary hero-subtitle">Control your spending & allocate your cash</p>
         </div>
 
         <!-- Sliding Tab Selector -->
@@ -442,7 +443,7 @@
       var fabBudget = document.getElementById('fab-add-budget');
       var fabJob = document.getElementById('fab-add-job');
 
-      // Tab switcher handlers
+      // Tab switcher handlers with slide animation
       if (weeklyTabBtn && jobsTabBtn) {
         weeklyTabBtn.addEventListener('click', function () {
           activeTab = 'weekly';
@@ -450,6 +451,8 @@
           jobsTabBtn.classList.remove('active');
           weeklyContent.classList.remove('hidden');
           jobsContent.classList.add('hidden');
+          // Re-animate progress bars when tab becomes visible
+          SavvySpend.animateProgressBars();
           
           var wb = DataStore.getWeeklyBudget();
           if (fabBudget) fabBudget.style.display = (wb && wb.limit > 0) ? 'flex' : 'none';
@@ -462,6 +465,8 @@
           weeklyTabBtn.classList.remove('active');
           jobsContent.classList.remove('hidden');
           weeklyContent.classList.add('hidden');
+          // Re-animate progress bars when tab becomes visible
+          SavvySpend.animateProgressBars();
           
           if (fabJob) fabJob.style.display = DataStore.getMoneyJobs().length > 0 ? 'flex' : 'none';
           if (fabBudget) fabBudget.style.display = 'none';
@@ -484,7 +489,10 @@
       }
 
       if (fabBudget) {
+        fabBudget.classList.add('fab-rotate');
         fabBudget.addEventListener('click', function () {
+          fabBudget.classList.add('fab-bounce');
+          setTimeout(function () { fabBudget.classList.remove('fab-bounce'); }, 400);
           // In weekly mode, FAB adds a new transaction to log spending easily!
           if (SavvySpend.components.Modals) SavvySpend.components.Modals.addTransaction();
         });
@@ -492,7 +500,10 @@
 
       // Bind money job triggers
       if (fabJob) {
+        fabJob.classList.add('fab-rotate');
         fabJob.addEventListener('click', function () {
+          fabJob.classList.add('fab-bounce');
+          setTimeout(function () { fabJob.classList.remove('fab-bounce'); }, 400);
           if (SavvySpend.components.Modals) SavvySpend.components.Modals.addMoneyJob();
         });
       }

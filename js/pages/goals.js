@@ -24,9 +24,10 @@
       if (goals.length === 0) {
         goalsHtml = `
           <div class="text-center py-xl bg-card card" style="border: 1px dashed var(--border);">
-            <i data-lucide="target" style="width: 48px; height: 48px; stroke: var(--text-tertiary); margin: 0 auto 12px;"></i>
+            <span class="empty-state-icon"><i data-lucide="target" style="width: 48px; height: 48px; stroke: var(--text-tertiary); margin: 0 auto 12px;"></i></span>
             <h4 class="text-base font-bold text-primary-text">No savings goals yet</h4>
             <p class="text-xs text-secondary mt-xs px-lg">Saving for a vacation, emergency fund, or a new laptop? Create a goal to track your progress!</p>
+            <div class="empty-state-dots mt-md"><span></span><span></span><span></span></div>
             <button class="btn btn-primary btn-sm mt-md" id="btn-add-goal-empty">Create Savings Goal</button>
           </div>
         `;
@@ -60,7 +61,7 @@
           }
 
           return `
-            <div class="card p-md mb-md goal-card" data-id="${g.id}" style="cursor: pointer; border: 1px solid var(--border); transition: transform 0.2s, box-shadow 0.2s;">
+            <div class="card p-md mb-md goal-card reveal reveal-d${(goals.indexOf(g) % 6) + 1}" data-id="${g.id}" style="cursor: pointer; border: 1px solid var(--border); transition: transform 0.2s, box-shadow 0.2s;">
               <div class="flex flex-between mb-sm">
                 <div class="flex flex-center gap-md">
                   <span style="width: 44px; height: 44px; background: ${g.color}15; color: ${g.color}; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;">
@@ -82,7 +83,7 @@
 
               <!-- Progress bar -->
               <div class="progress-bar w-full mt-xs" style="height: 8px; background: var(--bg-secondary); border-radius: var(--radius-full); overflow: hidden;">
-                <div class="progress-bar-fill" style="width: ${fillPct}%; background: ${g.color}; height: 100%; border-radius: var(--radius-full);"></div>
+                <div class="progress-bar-fill-animated" data-target-width="${fillPct}%" style="background: ${g.color}; height: 100%; border-radius: var(--radius-full);"></div>
               </div>
 
               <div class="flex flex-between text-xs mt-sm text-secondary">
@@ -96,8 +97,8 @@
 
       return `
         <div class="page-header mt-sm mb-lg">
-          <h2 class="page-title text-2xl font-bold">Savings Goals</h2>
-          <p class="page-subtitle text-xs text-secondary">Save for what matters most</p>
+          <h2 class="page-title text-2xl font-bold hero-title">Savings Goals</h2>
+          <p class="page-subtitle text-xs text-secondary hero-subtitle">Save for what matters most</p>
         </div>
 
         <!-- Goals Summary -->
@@ -112,7 +113,7 @@
             </div>
           </div>
           <div class="progress-bar w-full" style="height: 8px; background: var(--bg-secondary); border-radius: var(--radius-full); overflow: hidden;">
-            <div class="progress-bar-fill" style="width: ${Math.min(overallPct, 100)}%; background: var(--primary); height: 100%; border-radius: var(--radius-full);"></div>
+            <div class="progress-bar-fill-animated" data-target-width="${Math.min(overallPct, 100)}%" style="background: var(--primary); height: 100%; border-radius: var(--radius-full);"></div>
           </div>
         </div>
 
@@ -140,7 +141,10 @@
       // Bind Add buttons
       var fab = document.getElementById('fab-add-goal');
       if (fab) {
+        fab.classList.add('fab-rotate');
         fab.addEventListener('click', function () {
+          fab.classList.add('fab-bounce');
+          setTimeout(function () { fab.classList.remove('fab-bounce'); }, 400);
           if (SavvySpend.components.Modals) SavvySpend.components.Modals.addGoal();
         });
       }
@@ -162,8 +166,10 @@
       // Bind goal card clicks
       var cards = document.querySelectorAll('.goal-card');
       cards.forEach(function (card) {
+        var id = card.getAttribute('data-id');
+        var goal = goals.find(function (g) { return g.id === id; });
+
         card.addEventListener('click', function () {
-          var id = card.getAttribute('data-id');
           SavvySpend.navigate('#/goal/' + id);
         });
 
@@ -176,6 +182,16 @@
           card.style.transform = '';
           card.style.boxShadow = '';
         });
+
+        // Confetti for completed goals
+        if (goal && goal.current >= goal.target) {
+          setTimeout(function () {
+            var rect = card.getBoundingClientRect();
+            if (window.SavvySpend && SavvySpend.fireConfetti) {
+              SavvySpend.fireConfetti({ x: rect.left + rect.width / 2, y: rect.top + 30, count: 30 });
+            }
+          }, 1200);
+        }
       });
     },
 

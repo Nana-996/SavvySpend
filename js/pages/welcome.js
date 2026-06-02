@@ -38,11 +38,11 @@
               <div class="flex flex-center mb-md" style="margin: 0 auto; width: 64px; height: 64px; border-radius: var(--radius-xl); background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; box-shadow: 0 8px 20px var(--primary-glow);">
                 <i data-lucide="shield" style="width: 32px; height: 32px;"></i>
               </div>
-              <h1 class="text-3xl font-extrabold text-primary-text" style="letter-spacing: -0.5px; margin-bottom: 8px;">SavvySpend</h1>
-              <p class="text-sm text-secondary px-sm">Your secure, local, and gamified financial companion. Take control of your money today.</p>
+              <h1 class="text-3xl font-extrabold text-primary-text hero-title" style="letter-spacing: -0.5px; margin-bottom: 8px;">SavvySpend</h1>
+              <p class="text-sm text-secondary px-sm hero-subtitle">Your secure, local, and gamified financial companion. Take control of your money today.</p>
             </div>
 
-            <div class="card p-lg bg-card" style="border: 1px solid var(--border); box-shadow: var(--shadow-lg); border-radius: var(--radius-xl);">
+            <div class="card p-lg bg-card reveal-scale" style="border: 1px solid var(--border); box-shadow: var(--shadow-lg); border-radius: var(--radius-xl);">
               <h3 class="text-lg font-bold text-primary-text mb-sm flex flex-center gap-xs justify-center">
                 <i data-lucide="user-plus" style="width: 18px; height: 18px; color: var(--primary);"></i> Create Your Account
               </h3>
@@ -115,11 +115,11 @@
               <div class="flex flex-center mb-md" style="margin: 0 auto; width: 64px; height: 64px; border-radius: var(--radius-xl); background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; box-shadow: 0 8px 20px var(--primary-glow);">
                 <i data-lucide="lock" style="width: 32px; height: 32px;"></i>
               </div>
-              <h1 class="text-3xl font-extrabold text-primary-text" style="letter-spacing: -0.5px; margin-bottom: 8px;">Welcome Back</h1>
-              <p class="text-sm text-secondary px-sm">Enter your password to access your dashboard.</p>
+              <h1 class="text-3xl font-extrabold text-primary-text hero-title" style="letter-spacing: -0.5px; margin-bottom: 8px;">Welcome Back</h1>
+              <p class="text-sm text-secondary px-sm hero-subtitle">Enter your password to access your dashboard.</p>
             </div>
 
-            <div class="card p-lg bg-card" style="border: 1px solid var(--border); box-shadow: var(--shadow-lg); border-radius: var(--radius-xl);">
+            <div class="card p-lg bg-card reveal-scale" style="border: 1px solid var(--border); box-shadow: var(--shadow-lg); border-radius: var(--radius-xl);">
               ${localStorage.getItem('ss_bio_enabled') === 'true' ? `
                 <button type="button" id="btn-unlock-faceid" class="btn btn-outline w-full mb-md flex flex-center gap-xs" style="height: 48px; font-size: 0.95rem; border-radius: var(--radius-lg); border-color: var(--primary); color: var(--primary); background: var(--primary-light); display: flex; align-items: center; justify-content: center; margin-bottom: 16px; cursor: pointer;">
                   <i data-lucide="scan" style="width: 18px; height: 18px; margin-right: 6px;"></i> Unlock with Face ID
@@ -385,7 +385,7 @@
         var btnReset = document.getElementById('btn-reset-onboarding');
         if (btnReset) {
           btnReset.addEventListener('click', function () {
-            if (confirm('CAUTION: This will permanently erase ALL your data from this device including your profile, budgets, goals, and transactions. You cannot undo this. Are you sure?')) {
+            SavvySpend.confirmAction('CAUTION: This will permanently erase ALL your data from this device including your profile, budgets, goals, and transactions. You cannot undo this. Are you sure?', function () {
               SecureStorage.clear();
               localStorage.clear();
               sessionStorage.clear();
@@ -393,7 +393,7 @@
               alert('All data has been erased. You can create a new account.');
               window.location.hash = '#/welcome';
               window.location.reload();
-            }
+            });
           });
         }
       }

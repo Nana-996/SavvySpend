@@ -507,8 +507,8 @@
 
         <div class="profile-view">
           <div class="page-header mt-sm mb-lg">
-            <h2 class="page-title text-2xl font-bold">Profile</h2>
-            <p class="page-subtitle text-xs text-secondary">Manage settings & preferences</p>
+            <h2 class="page-title text-2xl font-bold hero-title">Profile</h2>
+            <p class="page-subtitle text-xs text-secondary hero-subtitle">Manage settings & preferences</p>
           </div>
 
           <!-- User Profile Card -->
@@ -832,11 +832,11 @@
         deleteCatBtns.forEach(function (btn) {
           btn.addEventListener('click', function () {
             var id = btn.getAttribute('data-id');
-            if (confirm('Are you sure you want to delete this custom category? All transactions in this category will be mapped to "Other", and any associated budgets will be deleted.')) {
+            SavvySpend.confirmAction('Are you sure you want to delete this custom category? All transactions in this category will be mapped to "Other", and any associated budgets will be deleted.', function () {
               DataStore.deleteCustomCategory(id);
               SavvySpend.showToast('Category deleted.', 'info');
               SavvySpend.handleRoute();
-            }
+            });
           });
         });
 
@@ -870,11 +870,11 @@
         deleteNoteBtns.forEach(function (btn) {
           btn.addEventListener('click', function () {
             var id = btn.getAttribute('data-id');
-            if (confirm('Are you sure you want to delete this Future Self Note?')) {
+            SavvySpend.confirmAction('Are you sure you want to delete this Future Self Note?', function () {
               DataStore.deleteFutureNote(id);
               SavvySpend.showToast('Note deleted.', 'info');
               SavvySpend.handleRoute();
-            }
+            });
           });
         });
 
@@ -1263,7 +1263,7 @@
       var resetItem = document.getElementById('item-reset-all');
       if (resetItem) {
         resetItem.addEventListener('click', function () {
-          if (confirm('CAUTION: This will permanently delete all your transactions, budgets, goals, profile information, and game progress from this device. Are you sure?')) {
+          SavvySpend.confirmAction('CAUTION: This will permanently delete all your transactions, budgets, goals, profile information, and game progress from this device. Are you sure?', function () {
             SecureStorage.clear();
             localStorage.clear();
             sessionStorage.clear();
@@ -1271,7 +1271,7 @@
             alert('All application data has been wiped. The app will now reload.');
             window.location.hash = '#/welcome';
             window.location.reload();
-          }
+          });
         });
       }
     },

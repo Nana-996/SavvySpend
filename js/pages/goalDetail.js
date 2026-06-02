@@ -125,7 +125,7 @@
 
           <!-- Progress Bar -->
           <div class="progress-bar w-full mt-md mb-md" style="height: 10px; background: var(--bg-secondary); border-radius: var(--radius-full); overflow: hidden;">
-            <div class="progress-bar-fill" style="width: ${fillPct}%; background: ${goal.color}; height: 100%; border-radius: var(--radius-full);"></div>
+            <div class="progress-bar-fill-animated" data-target-width="${fillPct}%" style="background: ${goal.color}; height: 100%; border-radius: var(--radius-full);"></div>
           </div>
 
           <div class="flex flex-between text-xs text-secondary">
@@ -183,12 +183,21 @@
 
       // Delete Goal
       document.getElementById('btn-goal-delete').addEventListener('click', function () {
-        if (confirm(`Are you sure you want to delete the "${goal.name}" savings goal? This cannot be undone.`)) {
+        SavvySpend.confirmAction('Are you sure you want to delete the "' + goal.name + '" savings goal? This cannot be undone.', function () {
           DataStore.deleteGoal(goalId);
           SavvySpend.showToast('Savings goal deleted.', 'info');
           SavvySpend.navigate('#/goals');
-        }
+        });
       });
+
+      // Confetti celebration for completed goals
+      if (goal.current >= goal.target) {
+        setTimeout(function () {
+          if (SavvySpend.fireConfetti) {
+            SavvySpend.fireConfetti({ count: 100, x: window.innerWidth / 2, y: window.innerHeight / 4 });
+          }
+        }, 800);
+      }
     },
 
     destroy: function () {

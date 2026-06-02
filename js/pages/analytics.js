@@ -265,8 +265,8 @@
       var html = '';
       html += '<div class="page-header mt-sm mb-md flex flex-between flex-center">';
       html += '  <div>';
-      html += '    <h2 class="page-title text-2xl font-bold">Analytics</h2>';
-      html += '    <p class="page-subtitle text-xs text-secondary">Analyze your spending behaviors</p>';
+      html += '    <h2 class="page-title text-2xl font-bold hero-title">Analytics</h2>';
+      html += '    <p class="page-subtitle text-xs text-secondary hero-subtitle">Analyze your spending behaviors</p>';
       html += '  </div>';
       html += '  <button class="btn btn-outline btn-sm flex flex-center gap-xs" id="btn-csv-export" style="font-size: 0.75rem;">';
       html += '    <i data-lucide="download" style="width: 14px; height: 14px;"></i> Export CSV';
@@ -282,7 +282,7 @@
       html += '</div>';
 
       // Total Spent Metrics
-      html += '<div class="card p-lg mb-lg bg-card" style="border: 1px solid var(--border);">';
+      html += '<div class="card p-lg mb-lg bg-card reveal reveal-d1" style="border: 1px solid var(--border);">';
       html += '  <span class="text-xs text-secondary uppercase font-semibold">Total Spent</span>';
       html += '  <div class="flex flex-between flex-center mt-xs">';
       html += '    <h2 class="text-2xl font-extrabold text-primary-text" style="letter-spacing: -0.5px;">' + SavvySpend.escapeHtml(formattedTotal) + '</h2>';
@@ -294,7 +294,7 @@
       html += '</div>';
 
       // Trend Bar Chart Section
-      html += '<div class="card p-md mb-lg bg-card" style="border: 1px solid var(--border);">';
+      html += '<div class="card p-md mb-lg bg-card reveal reveal-d2" style="border: 1px solid var(--border);">';
       html += '  <div class="flex flex-between flex-center mb-md">';
       html += '    <h4 class="text-xs font-bold text-secondary uppercase tracking-wider">Spending Trends</h4>';
       html += '    <div class="flex flex-center gap-sm">';
@@ -311,7 +311,7 @@
       html += '</div>';
 
       // Category Breakdown Donut Chart Section
-      html += '<div class="card p-md mb-xl bg-card" style="border: 1px solid var(--border);">';
+      html += '<div class="card p-md mb-xl bg-card reveal reveal-d3" style="border: 1px solid var(--border);">';
       html += '  <h4 class="text-xs font-bold text-secondary uppercase tracking-wider mb-md">Top Categories</h4>';
       if (sortedCats.length > 0) {
         html += '  <div class="flex flex-center mb-md" style="height: 160px; position: relative;">';
@@ -328,7 +328,7 @@
       html += '</div>';
 
       // Regret Tracker Section
-      html += '<div class="card p-md mb-lg bg-card" style="border: 1px solid var(--border);">';
+      html += '<div class="card p-md mb-lg bg-card reveal reveal-d4" style="border: 1px solid var(--border);">';
       html += '  <div class="flex flex-between flex-center mb-md" style="display: flex; justify-content: space-between; align-items: center;">';
       html += '    <h4 class="text-xs font-bold text-secondary uppercase tracking-wider">Regret Tracker</h4>';
       html += '    <span class="text-xs font-bold text-negative">' + SavvySpend.escapeHtml(SavvySpend.formatCurrencyPlain(totalRegretSpent)) + ' in Regrets</span>';
@@ -380,6 +380,31 @@
         '</div>';
       }).join('');
       
+      // Transaction Search & History
+      var allExpenses = txns.filter(function (t) { return t.amount < 0; }).slice(0, 20);
+      var txnListHtml = allExpenses.map(function (t) {
+        var cat = window.CATEGORIES[t.category] || window.CATEGORIES.other;
+        var dateLabel = SavvySpend.formatDateShort(t.date);
+        return '<div class="transaction-item txn-search-item" data-merchant="' + SavvySpend.escapeHtml(t.merchant.toLowerCase()) + '" data-category="' + SavvySpend.escapeHtml(t.category) + '" data-id="' + t.id + '" style="cursor: pointer; padding: 10px; border-bottom: 1px solid var(--border-light);">' +
+          '<div class="flex flex-center gap-sm">' +
+          '<div class="flex flex-center" style="width: 32px; height: 32px; border-radius: 50%; background: ' + cat.color + '15; color: ' + cat.color + ';">' +
+          '<i data-lucide="' + cat.icon + '" style="width: 14px; height: 14px;"></i></div>' +
+          '<div><h5 class="text-xs font-bold" style="margin: 0;">' + SavvySpend.escapeHtml(t.merchant) + '</h5>' +
+          '<span class="text-xxs text-secondary">' + cat.name + ' • ' + dateLabel + '</span></div></div>' +
+          '<span class="text-xs font-semibold">' + SavvySpend.formatCurrency(t.amount) + '</span></div>';
+      }).join('');
+
+      html += '<div class="card p-md mb-lg bg-card" style="border: 1px solid var(--border);">';
+      html += '  <h4 class="text-xs font-bold text-secondary uppercase tracking-wider mb-md">Recent Transactions</h4>';
+      html += '  <div class="search-bar mb-md">';
+      html += '    <span class="search-icon"><i data-lucide="search"></i></span>';
+      html += '    <input class="form-input" type="text" id="txn-search-input" placeholder="Search transactions...">';
+      html += '  </div>';
+      html += '  <div class="transaction-list" id="analytics-txn-list">';
+      html += txnListHtml || '<p class="text-center text-secondary py-md text-xs">No transactions found.</p>';
+      html += '  </div>';
+      html += '</div>';
+
       html += habitsHtml;
       html += '  </div>';
       html += '</div>';
@@ -652,6 +677,49 @@
           }
         });
       }
+
+      // 5. Transaction Search Filter
+      var searchInput = document.getElementById('txn-search-input');
+      if (searchInput) {
+        var debounceTimer = null;
+        searchInput.addEventListener('input', function () {
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(function () {
+            var query = searchInput.value.toLowerCase().trim();
+            var items = document.querySelectorAll('.txn-search-item');
+            var visibleCount = 0;
+            items.forEach(function (item) {
+              var merchant = item.getAttribute('data-merchant') || '';
+              var category = item.getAttribute('data-category') || '';
+              var matches = !query || merchant.indexOf(query) !== -1 || category.indexOf(query) !== -1;
+              item.style.display = matches ? '' : 'none';
+              if (matches) visibleCount++;
+            });
+            var list = document.getElementById('analytics-txn-list');
+            var emptyMsg = list ? list.querySelector('.search-empty-msg') : null;
+            if (visibleCount === 0 && list) {
+              if (!emptyMsg) {
+                emptyMsg = document.createElement('p');
+                emptyMsg.className = 'text-center text-secondary py-md text-xs search-empty-msg';
+                emptyMsg.textContent = 'No matching transactions found.';
+                list.appendChild(emptyMsg);
+              }
+              emptyMsg.style.display = '';
+            } else if (emptyMsg) {
+              emptyMsg.style.display = 'none';
+            }
+          }, 200);
+        });
+      }
+
+      // 6. Bind Transaction Item Clicks
+      var txnItems = document.querySelectorAll('.txn-search-item');
+      txnItems.forEach(function (item) {
+        item.addEventListener('click', function () {
+          var id = item.getAttribute('data-id');
+          if (id) SavvySpend.navigate('#/transaction/' + id);
+        });
+      });
     },
 
     destroy: function () {

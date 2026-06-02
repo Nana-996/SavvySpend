@@ -101,7 +101,7 @@
       var txnsHtml = '';
       
       if (recentTxns.length === 0) {
-        txnsHtml = `<p class="text-center text-secondary py-md">No transactions logged yet.</p>`;
+        txnsHtml = `<div class="text-center py-lg"><span class="empty-state-pulse"><i data-lucide="inbox" style="width: 32px; height: 32px; stroke: var(--text-tertiary); margin: 0 auto 8px; display: block;"></i></span><p class="text-secondary text-xs" style="margin: 0;">No transactions logged yet.</p><div class="empty-state-dots mt-sm"><span></span><span></span><span></span></div></div>`;
       } else {
         txnsHtml = recentTxns.map(function (t) {
           var cat = window.CATEGORIES[t.category] || window.CATEGORIES.other;
@@ -133,6 +133,11 @@
       var xpPct = Math.round((game.xp / game.xpToNextLevel) * 100);
 
       return `
+        <!-- Pull-to-refresh indicator -->
+        <div class="ptr-indicator" id="ptr-indicator">
+          <span class="ptr-spinner"></span> Pull to refresh
+        </div>
+
         <!-- App Header -->
         <header class="app-header flex flex-between mt-sm mb-md">
           <div class="flex flex-center gap-md" style="cursor: pointer;" onclick="SavvySpend.navigate('#/profile')">
@@ -149,9 +154,9 @@
         </header>
 
         <!-- Balance Card (Fintech Gradient Card) -->
-        <div class="card bg-primary text-white p-lg mb-lg" style="background: linear-gradient(135deg, var(--primary-dark), var(--primary)); border: none; box-shadow: var(--shadow-lg);">
+        <div class="card balance-card-shimmer balance-card-glow bg-primary text-white p-lg mb-lg" style="background: linear-gradient(135deg, var(--primary-dark), var(--primary)); border: none; box-shadow: var(--shadow-lg);">
           <span class="text-xs text-white-50 uppercase tracking-wider font-semibold">Total Balance</span>
-          <h1 class="text-3xl font-extrabold mt-xs mb-md" style="letter-spacing: -1px;">${formattedBalance}</h1>
+          <h1 class="text-3xl font-extrabold mt-xs mb-md" id="home-balance-display" style="letter-spacing: -1px;" data-value="${balance}">${formattedBalance}</h1>
           <div class="flex flex-between mt-md border-top pt-md" style="border-color: rgba(255,255,255,0.15);">
             <div>
               <span class="text-xs text-white-50">Monthly Spent</span>
@@ -160,7 +165,7 @@
             <div class="text-right">
               <span class="text-xs text-white-50">Active Streak</span>
               <h4 class="text-sm font-bold mt-xs flex flex-center gap-xs justify-end" style="color: #FEE2E2;">
-                <i data-lucide="flame" style="width: 14px; height: 14px; fill: #EF4444; stroke: #EF4444;"></i>
+                <span class="flame-icon"><i data-lucide="flame" style="width: 14px; height: 14px; fill: #EF4444; stroke: #EF4444;"></i></span>
                 ${game.streak} Days
               </h4>
             </div>
@@ -171,7 +176,7 @@
         ${businessBannerHtml}
 
         <!-- Quick Actions Grid -->
-        <div class="quick-actions flex gap-md mb-lg">
+        <div class="quick-actions flex gap-md mb-lg reveal-scale reveal-d1">
           <button class="btn btn-primary flex flex-center flex-column gap-xs p-md" id="action-add-txn" style="flex: 1; border-radius: var(--radius-md); height: 72px;">
             <i data-lucide="plus"></i>
             <span class="text-xs">Add Cash</span>
@@ -187,7 +192,7 @@
         </div>
 
         <!-- Gamification Progress Card -->
-        <div class="card p-md mb-lg flex flex-column gap-sm" style="cursor: pointer; background: linear-gradient(135deg, var(--bg-card), var(--bg-secondary)); border: 1px solid var(--border);" onclick="SavvySpend.navigate('#/journey')">
+        <div class="card p-md mb-lg flex flex-column gap-sm reveal reveal-d2" style="cursor: pointer; background: linear-gradient(135deg, var(--bg-card), var(--bg-secondary)); border: 1px solid var(--border);" onclick="SavvySpend.navigate('#/journey')">
           <div class="flex flex-between">
             <div class="flex flex-center gap-xs">
               <i data-lucide="zap" style="color: var(--orange); fill: var(--orange); width: 18px; height: 18px;"></i>
@@ -196,7 +201,7 @@
             <span class="text-xs font-semibold text-secondary">${game.xp} / ${game.xpToNextLevel} XP</span>
           </div>
           <div class="progress-bar w-full" style="height: 10px; background: var(--border);">
-            <div class="progress-bar-fill xp-fill" style="width: ${xpPct}%; background: linear-gradient(90deg, var(--orange), var(--primary)); height: 100%; border-radius: var(--radius-full);"></div>
+            <div class="progress-bar-fill-animated" data-target-width="${xpPct}%" style="background: linear-gradient(90deg, var(--orange), var(--primary)); height: 100%; border-radius: var(--radius-full);"></div>
           </div>
           <div class="flex flex-between text-xs text-secondary mt-xs">
             <span>Rank #${game.rank} globally</span>
@@ -205,11 +210,11 @@
         </div>
 
         <!-- Recent Transactions Section -->
-        <div class="section-header flex flex-between mb-sm">
+        <div class="section-header flex flex-between mb-sm reveal-left">
           <h3 class="section-title text-base font-bold">Recent Activity</h3>
           <button class="section-action btn-link text-xs font-semibold text-primary" id="btn-see-all-tx">See All</button>
         </div>
-        <div class="card p-sm mb-lg" id="recent-transactions-container" style="border: 1px solid var(--border);">
+        <div class="transaction-list" id="recent-transactions-container" style="border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden;">
           ${txnsHtml}
         </div>
 
@@ -228,10 +233,69 @@
     },
 
     afterRender: function () {
+      // Pull-to-refresh
+      var ptrIndicator = document.getElementById('ptr-indicator');
+      var pageContainer = document.getElementById('page-container');
+      var ptrStartY = 0;
+      var ptrThreshold = 60;
+      var ptrActive = false;
+
+      if (pageContainer && ptrIndicator) {
+        pageContainer.addEventListener('touchstart', function (e) {
+          if (pageContainer.scrollTop === 0 && e.touches.length === 1) {
+            ptrStartY = e.touches[0].clientY;
+            ptrActive = true;
+          }
+        }, { passive: true });
+
+        pageContainer.addEventListener('touchmove', function (e) {
+          if (!ptrActive) return;
+          var diff = e.touches[0].clientY - ptrStartY;
+          if (diff > 20 && pageContainer.scrollTop === 0) {
+            ptrIndicator.classList.add('ptr-visible');
+            ptrIndicator.style.transform = 'translateY(' + Math.min(diff * 0.4, ptrThreshold) + 'px)';
+          }
+        }, { passive: true });
+
+        pageContainer.addEventListener('touchend', function () {
+          if (ptrIndicator.classList.contains('ptr-visible')) {
+            ptrIndicator.classList.add('ptr-refreshing');
+            ptrIndicator.style.transform = 'translateY(0)';
+            // Refresh the page
+            setTimeout(function () {
+              SavvySpend.handleRoute();
+              SavvySpend.showToast('Dashboard refreshed!', 'success');
+            }, 500);
+          }
+          ptrActive = false;
+          ptrIndicator.classList.remove('ptr-visible');
+          ptrIndicator.style.transform = '';
+        }, { passive: true });
+      }
+
+      // Animate balance number
+      var balanceEl = document.getElementById('home-balance-display');
+      if (balanceEl) {
+        var rawVal = parseFloat(balanceEl.getAttribute('data-value')) || 0;
+        var settings = DataStore.getSettings();
+        var curr = window.CURRENCIES[settings.currency] || window.CURRENCIES.GHS;
+        SavvySpend.animateNumber(balanceEl, rawVal, 800, curr.symbol);
+      }
+
+      // Add card entrance animations
+      var cards = document.querySelectorAll('#page-container .card');
+      cards.forEach(function (card, i) {
+        card.classList.add('card-animate');
+        if (i < 6) card.classList.add('stagger-delay-' + (i + 1));
+      });
       // Bind bell click
       var bell = document.getElementById('btn-bell');
       if (bell) {
         bell.addEventListener('click', function () {
+          // Add bell ring animation
+          bell.classList.add('bell-ring');
+          setTimeout(function () { bell.classList.remove('bell-ring'); }, 800);
+
           // Hide notification indicator dot
           var ind = bell.querySelector('.pulse-indicator');
           if (ind) ind.style.display = 'none';
@@ -279,6 +343,15 @@
         });
         item.addEventListener('mouseleave', function () {
           item.style.backgroundColor = '';
+        });
+      });
+
+      // Add button micro-interactions to quick actions
+      var quickBtns = document.querySelectorAll('.quick-actions .btn');
+      quickBtns.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          btn.classList.add('icon-pulse');
+          setTimeout(function () { btn.classList.remove('icon-pulse'); }, 300);
         });
       });
     },

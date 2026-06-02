@@ -93,8 +93,8 @@
       return `
         <!-- Header -->
         <div class="page-header mt-sm mb-lg">
-          <h2 class="page-title text-2xl font-bold">Your Journey</h2>
-          <p class="page-subtitle text-xs text-secondary">Earn XP, level up, and unlock trophies</p>
+          <h2 class="page-title text-2xl font-bold hero-title">Your Journey</h2>
+          <p class="page-subtitle text-xs text-secondary hero-subtitle">Earn XP, level up, and unlock trophies</p>
         </div>
 
         <!-- Level & XP Card (Special Design) -->
@@ -110,7 +110,7 @@
           </div>
 
           <div class="progress-bar w-full mt-md mb-xs" style="height: 10px; background: rgba(255, 255, 255, 0.2); border-radius: var(--radius-full); overflow: hidden;">
-            <div class="progress-bar-fill" style="width: ${xpPct}%; background: white; height: 100%; border-radius: var(--radius-full);"></div>
+            <div class="progress-bar-fill-animated" data-target-width="${xpPct}%" style="background: white; height: 100%; border-radius: var(--radius-full);"></div>
           </div>
 
           <div class="flex flex-between text-xs mt-xs" style="color: rgba(255,255,255,0.85);">
@@ -172,6 +172,10 @@
             if (result.leveled) {
               setTimeout(function () {
                 SavvySpend.showToast(`Leveled Up to Level ${result.newLevel}! 🎉`, 'info');
+                // Fire confetti for level up!
+                if (SavvySpend.fireConfetti) {
+                  SavvySpend.fireConfetti({ count: 120, x: window.innerWidth / 2, y: window.innerHeight / 3 });
+                }
               }, 1200);
             }
             SavvySpend.handleRoute(); // Refresh UI

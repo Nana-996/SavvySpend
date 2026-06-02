@@ -488,7 +488,7 @@
             var inv = DataStore.getInvoices().find(function (i) { return i.id === id; });
             if (!inv) return;
 
-            if (confirm('Mark invoice ' + inv.invoiceNumber + ' as paid? This will automatically create an income transaction.')) {
+            SavvySpend.confirmAction('Mark invoice ' + inv.invoiceNumber + ' as paid? This will automatically create an income transaction.', function () {
               // Create transaction
               var currencyCode = DataStore.getSettings().currency || 'GHS';
               var t = {
@@ -513,7 +513,7 @@
               DataStore.addXP(25);
               SavvySpend.showToast('Invoice marked paid +25 XP!', 'success');
               SavvySpend.handleRoute();
-            }
+            });
           });
         });
 
@@ -522,11 +522,11 @@
         delInvBtns.forEach(function (btn) {
           btn.addEventListener('click', function () {
             var id = btn.getAttribute('data-id');
-            if (confirm('Are you sure you want to delete this invoice? Linked payment transactions will remain intact.')) {
+            SavvySpend.confirmAction('Are you sure you want to delete this invoice? Linked payment transactions will remain intact.', function () {
               DataStore.deleteInvoice(id);
               SavvySpend.showToast('Invoice deleted.', 'info');
               SavvySpend.handleRoute();
-            }
+            });
           });
         });
       }
@@ -559,7 +559,7 @@
             var reserveAmount = Math.max(0, profit) * (rate / 100);
 
             if (reserveAmount <= 0) {
-              alert('You have no net profit to reserve taxes on yet. Log some business income first!');
+              SavvySpend.showToast('You have no net profit to reserve taxes on yet. Log some business income first!', 'warning');
               return;
             }
 

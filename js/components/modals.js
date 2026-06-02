@@ -8,6 +8,30 @@
   window.SavvySpend.components = window.SavvySpend.components || {};
 
   var Modals = {
+    // Inline validation helper
+    showFieldError: function (inputEl, message) {
+      if (!inputEl) return;
+      inputEl.classList.add('input-error');
+      inputEl.classList.remove('input-success');
+      var existing = inputEl.parentNode.querySelector('.form-error-text');
+      if (existing) existing.remove();
+      var errSpan = document.createElement('span');
+      errSpan.className = 'form-error-text';
+      errSpan.textContent = message;
+      inputEl.parentNode.appendChild(errSpan);
+      // Auto-clear on input
+      function clearErr() {
+        inputEl.classList.remove('input-error');
+        var e = inputEl.parentNode.querySelector('.form-error-text');
+        if (e) e.remove();
+        inputEl.removeEventListener('input', clearErr);
+      }
+      inputEl.addEventListener('input', clearErr);
+      // Shake animation
+      inputEl.style.animation = 'none';
+      setTimeout(function () { inputEl.style.animation = ''; }, 10);
+    },
+
     addTransaction: function () {
       var categories = DataStore.getCustomCategories();
       var today = new Date().toISOString().split('T')[0];
@@ -632,7 +656,7 @@
             isItemized = true;
             var rows = itemRowsContainer.querySelectorAll('.itemized-row');
             if (rows.length === 0) {
-              alert('Please add at least one line item.');
+              SavvySpend.showToast('Please add at least one line item.', 'warning');
               return;
             }
             rows.forEach(function (r) {
@@ -646,7 +670,7 @@
           } else {
             var rawAmount = parseFloat(document.getElementById('txn-amount').value);
             if (isNaN(rawAmount) || rawAmount <= 0) {
-              alert('Please enter a valid amount.');
+              Modals.showFieldError(document.getElementById('txn-amount'), 'Please enter a valid amount greater than 0');
               return;
             }
             finalAmount = -rawAmount;
@@ -657,7 +681,7 @@
             var rev = parseFloat(revInput.value) || 0;
             var cost = parseFloat(costInput.value) || 0;
             if (rev <= 0) {
-              alert('Please enter a valid product sales revenue.');
+              Modals.showFieldError(revInput, 'Revenue must be greater than 0');
               return;
             }
             productRevenue = rev;
@@ -666,7 +690,7 @@
           } else {
             var rawAmount = parseFloat(document.getElementById('txn-amount').value);
             if (isNaN(rawAmount) || rawAmount <= 0) {
-              alert('Please enter a valid amount.');
+              Modals.showFieldError(document.getElementById('txn-amount'), 'Please enter a valid amount greater than 0');
               return;
             }
             finalAmount = rawAmount;
@@ -869,7 +893,7 @@
         var limit = parseFloat(document.getElementById('bud-limit').value);
         
         if (isNaN(limit) || limit <= 0) {
-          alert('Please enter a valid monthly limit.');
+                    Modals.showFieldError(document.getElementById('bud-limit'), 'Please enter a valid monthly limit');
           return;
         }
 
@@ -943,7 +967,7 @@
 
         var limit = parseFloat(document.getElementById('edit-bud-limit').value);
         if (isNaN(limit) || limit <= 0) {
-          alert('Please enter a valid limit.');
+          Modals.showFieldError(document.getElementById('edit-bud-limit'), 'Please enter a valid limit');
           return;
         }
 
@@ -955,12 +979,12 @@
 
       // Handle Delete
       document.getElementById('btn-delete-budget').addEventListener('click', function () {
-        if (confirm(`Are you sure you want to delete the ${budget.name} budget? This cannot be undone.`)) {
+        SavvySpend.confirmAction('Are you sure you want to delete the ' + budget.name + ' budget? This cannot be undone.', function () {
           DataStore.deleteBudget(id);
           SavvySpend.closeModal();
           SavvySpend.showToast('Budget deleted.', 'info');
           SavvySpend.handleRoute();
-        }
+        });
       });
     },
 
@@ -1047,7 +1071,7 @@
         var icon = document.getElementById('goal-icon').value.trim() || 'target';
 
         if (isNaN(target) || target <= 0) {
-          alert('Please enter a valid target amount.');
+                    Modals.showFieldError(document.getElementById('goal-target'), 'Please enter a valid target amount');
           return;
         }
 
@@ -1117,7 +1141,7 @@
         var source = document.getElementById('fund-source').value.trim() || 'Checking';
 
         if (isNaN(amount) || amount <= 0) {
-          alert('Please enter a valid contribution amount.');
+                    Modals.showFieldError(document.getElementById('funds-amount'), 'Please enter a valid contribution amount');
           return;
         }
 
@@ -1279,7 +1303,7 @@
         var avatar = hiddenAv.value;
 
         if (!name || !email) {
-          alert('Please fill out all fields.');
+                    SavvySpend.showToast('Please fill out all fields.', 'warning');
           return;
         }
 
@@ -1642,12 +1666,12 @@
         var btnDelete = document.getElementById('btn-delete-job');
         if (btnDelete) {
           btnDelete.addEventListener('click', function () {
-            if (confirm(`Are you sure you want to delete the "${job.name}" bucket? This will unallocate the assigned cash.`)) {
+            SavvySpend.confirmAction('Are you sure you want to delete the "' + job.name + '" bucket? This will unallocate the assigned cash.', function () {
               DataStore.deleteMoneyJob(job.id);
               SavvySpend.closeModal();
               SavvySpend.showToast('Bucket deleted.', 'info');
               SavvySpend.handleRoute();
-            }
+            });
           });
         }
       }
@@ -1874,7 +1898,7 @@
         e.preventDefault();
         var limit = parseFloat(document.getElementById('wb-limit').value);
         if (isNaN(limit) || limit <= 0) {
-          alert('Please enter a valid weekly limit.');
+          Modals.showFieldError(document.getElementById('wb-limit'), 'Please enter a valid weekly limit');
           return;
         }
         
@@ -1965,19 +1989,19 @@
 
       if (client) {
         document.getElementById('btn-delete-client').addEventListener('click', function () {
-          if (confirm('Are you sure you want to delete this client? Linked invoices will keep history but lose client details link.')) {
+          SavvySpend.confirmAction('Are you sure you want to delete this client? Linked invoices will keep history but lose client details link.', function () {
             DataStore.deleteClient(client.id);
             SavvySpend.showToast('Client deleted.', 'info');
             SavvySpend.closeModal();
             SavvySpend.handleRoute();
-          }
+          });
         });
       }
     },
     addInvoice: function (invoiceId) {
       var clients = DataStore.getClients() || [];
       if (clients.length === 0) {
-        alert('Please create at least one client in the Client Directory first!');
+                  SavvySpend.showToast('Please create at least one client in the Client Directory first!', 'warning');
         return;
       }
 
@@ -2150,7 +2174,7 @@
             row.remove();
             calculateTotals();
           } else {
-            alert('An invoice must have at least one line item.');
+                      SavvySpend.showToast('An invoice must have at least one line item.', 'warning');
           }
         });
 

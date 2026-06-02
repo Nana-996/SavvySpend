@@ -209,7 +209,7 @@
         '<div class="flex flex-center gap-md">' +
         '<button class="btn-icon" id="btn-back-home"><i data-lucide="arrow-left"></i></button>' +
         '<div>' +
-        '<h2 class="page-title text-lg font-extrabold" style="margin: 0;">Details</h2>' +
+        '<h2 class="page-title text-lg font-extrabold hero-title" style="margin: 0;">Details</h2>' +
         '<span class="text-xs text-secondary">Transaction Info</span>' +
         '</div>' +
         '</div>' +
@@ -338,7 +338,7 @@
       });
 
       document.getElementById('btn-delete-txn').addEventListener('click', function () {
-        if (confirm('Are you sure you want to delete this transaction? This will also revert any linked budget spend calculation.')) {
+        SavvySpend.confirmAction('Are you sure you want to delete this transaction? This will also revert any linked budget spend calculation.', function () {
           if (txn.amount < 0) {
             var budgets = DataStore.getBudgets();
             var b = budgets.find(function (x) { return x.category === txn.category; });
@@ -351,7 +351,7 @@
           DataStore.deleteTransaction(txnId);
           SavvySpend.showToast('Transaction deleted.', 'info');
           SavvySpend.navigate('#/home');
-        }
+        });
       });
 
       var addTagBtn = document.getElementById('btn-add-tag');
