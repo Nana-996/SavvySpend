@@ -9,7 +9,7 @@
 
   var Goals = {
     render: function (param) {
-      var goals = DataStore.getGoals();
+      var goals = DataStore.getGoals().filter(function (g) { return !g.isBusiness; });
 
       // Calculate totals
       var totalTarget = goals.reduce(function (sum, g) { return sum + g.target; }, 0);
@@ -138,6 +138,7 @@
     },
 
     afterRender: function () {
+      var goals = DataStore.getGoals().filter(function (g) { return !g.isBusiness; });
       // Bind Add buttons
       var fab = document.getElementById('fab-add-goal');
       if (fab) {

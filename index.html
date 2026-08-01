@@ -1,87 +1,32 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="SavvySpend">
-  <meta name="description" content="SavvySpend — Smart financial management for young adults. Track spending, set budgets, save smarter.">
-  <meta name="theme-color" content="#10B981">
-  <title>SavvySpend — Smart Money Management</title>
-
-  <!-- Preconnect for performance -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
-  <!-- Google Fonts — Inter -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-
-  <!-- Chart.js 4 -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-
-  <!-- CryptoJS for local encryption -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
-
-  <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@0.294.0/dist/umd/lucide.min.js"></script>
-
-  <!-- Favicon -->
-  <link rel="icon" type="image/svg+xml" href="favicon.svg">
-
-  <!-- App Styles -->
-  <link rel="stylesheet" href="css/styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f766e" />
+  <meta name="description" content="SavvySpend helps you track savings and business income by where you keep your money." />
+  <title>SavvySpend � Save smarter</title>
+  <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
+  <div class="app-shell">
+    <div class="app-container">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">SavvySpend</p>
+          <h1>Money that works for you</h1>
+        </div>
+      </header>
 
-  <!-- App Scale Wrapper -->
-  <div id="app-shell" class="app-shell">
+      <main id="page-container" class="page-container"></main>
 
-    <!-- App Shell -->
-    <div id="app" class="app-container">
-      <div id="page-container" class="page-container"></div>
-      <nav id="bottom-navbar" class="navbar"></nav>
-    </div>
-
-  </div>
-
-  <!-- Modal Overlay (bottom sheet) -->
-  <div id="modal-overlay" class="modal-overlay hidden">
-    <div class="modal-sheet">
-      <div class="modal-handle"></div>
-      <div id="modal-content" class="modal-content"></div>
+      <nav id="bottom-navbar" class="bottom-navbar"></nav>
     </div>
   </div>
 
-  <!-- Toast Notifications -->
   <div id="toast-container" class="toast-container"></div>
 
-  <!-- JavaScript — Load order matters -->
-  <!-- 1. Infrastructure -->
   <script src="js/storage.js"></script>
-  <script src="js/data.js"></script>
-
-  <!-- 2. Components -->
-  <script src="js/components/charts.js"></script>
-  <script src="js/components/navbar.js"></script>
-  <script src="js/components/modals.js"></script>
-  <script src="js/components/notifications.js"></script>
-
-  <!-- 3. Pages -->
-  <script src="js/pages/home.js"></script>
-  <script src="js/pages/budgets.js"></script>
-  <script src="js/pages/analytics.js"></script>
-  <script src="js/pages/goals.js"></script>
-  <script src="js/pages/goalDetail.js"></script>
-  <script src="js/pages/transaction.js"></script>
-  <script src="js/pages/profile.js"></script>
-  <script src="js/pages/journey.js"></script>
-  <script src="js/pages/welcome.js"></script>
-  <script src="js/pages/moneyModes.js"></script>
-  <script src="js/pages/business.js"></script>
-
-  <!-- 4. App (router, init — must be last) -->
   <script src="js/app.js"></script>
-
 </body>
 </html>

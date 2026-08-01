@@ -82,7 +82,7 @@
         var txns = DataStore.getTransactions();
         var cycleSpent = txns
           .filter(function (t) {
-            return t.amount < 0 && t.date >= wb.startDate;
+            return !t.isBusiness && t.amount < 0 && t.date >= wb.startDate;
           })
           .reduce(function (sum, t) { return sum + Math.abs(t.amount); }, 0);
 
@@ -106,7 +106,7 @@
         // Today's allowance check
         var todayStr = new Date().toISOString().split('T')[0];
         var spentToday = txns
-          .filter(function (t) { return t.amount < 0 && t.date === todayStr; })
+          .filter(function (t) { return !t.isBusiness && t.amount < 0 && t.date === todayStr; })
           .reduce(function (sum, t) { return sum + Math.abs(t.amount); }, 0);
 
         var start = new Date(wb.startDate);
@@ -117,7 +117,7 @@
         var daysLeft = 8 - currentDayIndex;
 
         var spentBeforeToday = txns
-          .filter(function (t) { return t.amount < 0 && t.date >= wb.startDate && t.date < todayStr; })
+          .filter(function (t) { return !t.isBusiness && t.amount < 0 && t.date >= wb.startDate && t.date < todayStr; })
           .reduce(function (sum, t) { return sum + Math.abs(t.amount); }, 0);
 
         var remainingWeeklyAllowance = Math.max(0, wb.limit - spentBeforeToday);

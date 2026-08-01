@@ -15,7 +15,7 @@
       var txns = DataStore.getTransactions();
 
       // Money Jobs math (Buckets tab)
-      var walletBalance = txns.reduce(function (sum, t) { return sum + t.amount; }, 0);
+      var walletBalance = txns.filter(function (t) { return !t.isBusiness; }).reduce(function (sum, t) { return sum + t.amount; }, 0);
       var jobs = DataStore.getMoneyJobs() || [];
       var totalAssigned = jobs.reduce(function (sum, j) { return sum + j.assigned; }, 0);
       var unallocatedCash = walletBalance - totalAssigned;
@@ -59,9 +59,9 @@
         var todayStr = new Date().toISOString().split('T')[0];
         var endCycleDate = addDays(wb.startDate, 6);
         
-        // Filter week's transactions (expenses only)
+        // Filter week's transactions (expenses only, excluding business)
         var weekExpenses = txns.filter(function (t) {
-          return t.amount < 0 && t.date >= wb.startDate && t.date <= endCycleDate;
+          return !t.isBusiness && t.amount < 0 && t.date >= wb.startDate && t.date <= endCycleDate;
         });
 
         var weeklySpent = weekExpenses.reduce(function (sum, t) {
@@ -85,17 +85,17 @@
         if (currentDayIndex > 7) currentDayIndex = 7;
         var daysLeft = 8 - currentDayIndex;
 
-        // Spent before today in this cycle
+        // Spent before today in this cycle (excluding business)
         var spentBeforeToday = txns
           .filter(function (t) {
-            return t.amount < 0 && t.date >= wb.startDate && t.date < todayStr;
+            return !t.isBusiness && t.amount < 0 && t.date >= wb.startDate && t.date < todayStr;
           })
           .reduce(function (sum, t) { return sum + Math.abs(t.amount); }, 0);
 
-        // Spent today
+        // Spent today (excluding business)
         var spentToday = txns
           .filter(function (t) {
-            return t.amount < 0 && t.date === todayStr;
+            return !t.isBusiness && t.amount < 0 && t.date === todayStr;
           })
           .reduce(function (sum, t) { return sum + Math.abs(t.amount); }, 0);
 
@@ -138,10 +138,10 @@
           `;
         }
 
-        // Cycle transactions html list
+        // Cycle transactions html list (excluding business)
         var transactionsHtml = '';
         var weekExpensesList = txns.filter(function (t) {
-          return t.date >= wb.startDate && t.date <= endCycleDate;
+          return !t.isBusiness && t.date >= wb.startDate && t.date <= endCycleDate;
         }).slice(0, 3); // show top 3 recent in the cycle
 
         if (weekExpensesList.length === 0) {

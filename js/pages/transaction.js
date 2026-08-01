@@ -339,7 +339,7 @@
 
       document.getElementById('btn-delete-txn').addEventListener('click', function () {
         SavvySpend.confirmAction('Are you sure you want to delete this transaction? This will also revert any linked budget spend calculation.', function () {
-          if (txn.amount < 0) {
+          if (txn.amount < 0 && !txn.isBusiness) {
             var budgets = DataStore.getBudgets();
             var b = budgets.find(function (x) { return x.category === txn.category; });
             if (b) {

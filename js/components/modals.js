@@ -774,7 +774,8 @@
                 tags: ['savings'],
                 currency: DataStore.getSettings().currency || 'GHS',
                 bucketId: null,
-                rating: 'worth_it'
+                rating: 'worth_it',
+                isBusiness: isBusiness
               };
               DataStore.addTransaction(outTx);
 
@@ -800,7 +801,7 @@
           DataStore.updateInvoice(invoiceId, { status: 'paid', txnId: t.id });
         }
 
-        if (type === 'expense') {
+        if (type === 'expense' && !isBusiness) {
           var budgets = DataStore.getBudgets();
           var budget = budgets.find(function (b) { return b.category === category; });
           if (budget) {
@@ -903,7 +904,7 @@
         var txns = DataStore.getTransactions();
         var currentMonthStr = new Date().toISOString().substring(0, 7); // YYYY-MM
         var spent = txns
-          .filter(function (t) { return t.category === category && t.date.startsWith(currentMonthStr) && t.amount < 0; })
+          .filter(function (t) { return !t.isBusiness && t.category === category && t.date.startsWith(currentMonthStr) && t.amount < 0; })
           .reduce(function (acc, t) { return acc + Math.abs(t.amount); }, 0);
 
         var newBudget = {
@@ -1168,8 +1169,9 @@
           paymentLast4: '3301',
           status: 'completed',
           notes: `Contribution to ${goal.name}`,
-          tags: ['savings'],
-          currency: DataStore.getSettings().currency || 'GHS'
+          tags: goal.isBusiness ? ['savings', 'business'] : ['savings'],
+          currency: DataStore.getSettings().currency || 'GHS',
+          isBusiness: !!goal.isBusiness
         };
         DataStore.addTransaction(t);
 

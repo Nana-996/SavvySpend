@@ -829,7 +829,7 @@
           var endCycleDate = addDaysLocal(wb.startDate, 6);
           var cycleSpent = txns
             .filter(function (t) {
-              return t.amount < 0 && t.date >= wb.startDate && t.date <= endCycleDate;
+              return !t.isBusiness && t.amount < 0 && t.date >= wb.startDate && t.date <= endCycleDate;
             })
             .reduce(function (sum, t) { return sum + Math.abs(t.amount); }, 0);
             

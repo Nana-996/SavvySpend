@@ -22,14 +22,15 @@
       var user = DataStore.getUser();
       var game = DataStore.getGameState();
       var txns = DataStore.getTransactions();
+      var personalTxns = txns.filter(function (t) { return !t.isBusiness; });
 
-      // Calculate total balance (sum of all transactions)
-      var balance = txns.reduce(function (sum, t) { return sum + t.amount; }, 0);
+      // Calculate total balance (sum of personal transactions)
+      var balance = personalTxns.reduce(function (sum, t) { return sum + t.amount; }, 0);
       var formattedBalance = SavvySpend.formatCurrencyPlain(balance);
 
-      // Monthly spending (sum of negative transactions this month)
+      // Monthly spending (sum of negative personal transactions this month)
       var currentMonth = new Date().toISOString().substring(0, 7); // YYYY-MM
-      var monthlySpent = txns
+      var monthlySpent = personalTxns
         .filter(function (t) { return t.amount < 0 && t.date.startsWith(currentMonth); })
         .reduce(function (sum, t) { return sum + Math.abs(t.amount); }, 0);
       
@@ -96,8 +97,8 @@
         `;
       }
 
-      // Recent Transactions (top 5)
-      var recentTxns = txns.slice(0, 5);
+      // Recent Transactions (top 5 personal transactions)
+      var recentTxns = personalTxns.slice(0, 5);
       var txnsHtml = '';
       
       if (recentTxns.length === 0) {
@@ -155,7 +156,7 @@
 
         <!-- Balance Card (Fintech Gradient Card) -->
         <div class="card balance-card-shimmer balance-card-glow bg-primary text-white p-lg mb-lg" style="background: linear-gradient(135deg, var(--primary-dark), var(--primary)); border: none; box-shadow: var(--shadow-lg);">
-          <span class="text-xs text-white-50 uppercase tracking-wider font-semibold">Total Balance</span>
+          <span class="text-xs text-white-50 uppercase tracking-wider font-semibold">Personal Balance</span>
           <h1 class="text-3xl font-extrabold mt-xs mb-md" id="home-balance-display" style="letter-spacing: -1px;" data-value="${balance}">${formattedBalance}</h1>
           <div class="flex flex-between mt-md border-top pt-md" style="border-color: rgba(255,255,255,0.15);">
             <div>

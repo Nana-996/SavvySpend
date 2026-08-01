@@ -207,6 +207,28 @@
       }
 
       // Taxes Content
+      var taxGoal = (DataStore.getGoals() || []).find(function (g) { return g.name.toLowerCase().indexOf('tax') !== -1; });
+      var taxGoalProgressHtml = '';
+      if (taxGoal) {
+        var pct = Math.round((taxGoal.current / taxGoal.target) * 100);
+        var fillPct = Math.min(pct, 100);
+        taxGoalProgressHtml = `
+          <div class="card p-md mb-lg bg-card" style="border: 1px solid var(--border); border-left: 4px solid ${taxGoal.color};">
+            <div class="flex flex-between flex-center mb-xs">
+              <span class="text-xs font-bold text-primary-text flex flex-center gap-xs"><i data-lucide="shield" style="width: 14px; height: 14px; color: ${taxGoal.color};"></i> Tax Reserve Goal Progress</span>
+              <span class="text-xs font-bold text-primary-text" style="color: ${taxGoal.color};">${pct}%</span>
+            </div>
+            <div class="progress-bar w-full mt-xs" style="height: 6px; background: var(--bg-secondary); border-radius: var(--radius-full); overflow: hidden;">
+              <div class="progress-bar-fill-animated" data-target-width="${fillPct}%" style="background: ${taxGoal.color}; height: 100%; border-radius: var(--radius-full);"></div>
+            </div>
+            <div class="flex flex-between text-xxs mt-sm text-secondary" style="margin-top: 6px;">
+              <span>Saved: <strong>${SavvySpend.formatCurrencyPlain(taxGoal.current)}</strong></span>
+              <span>Target: <strong>${SavvySpend.formatCurrencyPlain(taxGoal.target)}</strong></span>
+            </div>
+          </div>
+        `;
+      }
+
       var taxesTabHtml = '';
       taxesTabHtml = `
         <div class="card p-lg mb-lg bg-card" style="border: 1px solid var(--border);">
@@ -214,6 +236,8 @@
           <h2 class="text-2xl font-black text-primary-text mt-xs" style="margin: 4px 0 8px;">${SavvySpend.formatCurrency(netProfit)}</h2>
           <p class="text-xxs text-secondary" style="line-height: 1.4; margin: 0;">This is calculated as Total Business Revenue minus Total Business Expenses.</p>
         </div>
+
+        ${taxGoalProgressHtml}
 
         <div class="card p-lg mb-lg bg-card" style="border: 1px solid var(--border); display: flex; flex-direction: column; gap: 16px;">
           <div>
@@ -577,6 +601,7 @@
                 deadline: new Date().getFullYear() + '-12-31',
                 icon: 'shield',
                 color: '#EC4899',
+                isBusiness: true, // Mark as business goal
                 contributions: []
               };
               DataStore.addGoal(newGoal);

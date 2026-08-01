@@ -18,7 +18,7 @@
 
   var Analytics = {
     render: function (param) {
-      var txns = DataStore.getTransactions();
+      var txns = DataStore.getTransactions().filter(function (t) { return !t.isBusiness; });
       var isWeekly = currentPeriod === 'weekly';
 
       // 1. Calculate Period Spending
@@ -483,7 +483,7 @@
     },
 
     afterRender: function () {
-      var txns = DataStore.getTransactions();
+      var txns = DataStore.getTransactions().filter(function (t) { return !t.isBusiness; });
       var isWeekly = currentPeriod === 'weekly';
 
       // 1. Initialise Trend Chart
